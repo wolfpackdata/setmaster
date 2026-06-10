@@ -1,26 +1,17 @@
 """
 Runner script to execute the playlist processing pipeline in order.
-Usage: python run_all_scripts.py "C:\path\to\collection.nml"
+Usage: python run_all_scripts.py "C:\path\to\collection.nml" "C:\path\to\repo\"
 """
 import subprocess
 import sys
 from pathlib import Path
 
-# Output directories and static files that will be written by the pipeline
-OUTPUT_DIRS = [
-    r"C:\studio\rmldata\playlist-dev\Traktor",
-    r"C:\studio\rmldata\playlist-dev\Joined",
-]
-OUTPUT_STATIC_FILES = [
-    r"C:\studio\rmldata\playlist-dev\traktor_spotify_playlist_compare.csv",
-]
-
-CONFIG_FILE = r"C:\studio\rmldata\playlist-dev\config__traktor_playlists_to_sync.csv"
+VALID_REPO_NAMES = {"playlist-dev", "setmaster"}
 
 CONFIG_FILE_FORMAT = """
-  Expected format (CSV with a 'playlist_name' column):
+  Expected format (CSV with a 'playlist_name_in_both_spotify_and_traktor' column):
 
-    playlist_name
+    playlist_name_in_both_spotify_and_traktor
     MyPlaylist1
     MyPlaylist2
     MyPlaylist3
@@ -29,15 +20,31 @@ CONFIG_FILE_FORMAT = """
 """
 
 
-def check_input_files_exist(nml_path):
+def validate_repo_path(repo_path_str):
+    """
+    Confirm the provided path ends in a recognised repository folder name.
+    Returns a resolved Path on success, exits with a message on failure.
+    """
+    repo_path = Path(repo_path_str.rstrip("\\/"))
+    if repo_path.name.lower() not in VALID_REPO_NAMES:
+        print(
+            f"\nERROR: The repository path must end in one of: "
+            + ", ".join(f"\\{n}\\" for n in sorted(VALID_REPO_NAMES))
+        )
+        print(f"  Received: {repo_path_str}")
+        print(
+            "\nPlease browse for the correct repository folder in the SetMaster interface and try again."
+        )
+        sys.exit(1)
+    return repo_path
+
+
+def check_input_files_exist(nml_path, config_file):
     """
     Verify that required input files exist before the pipeline starts.
-    If any are missing, print a clear message and return False.
     """
-    input_files = [nml_path, CONFIG_FILE]
     missing = []
-
-    for filepath in input_files:
+    for filepath in [nml_path, str(config_file)]:
         if not Path(filepath).exists():
             missing.append(filepath)
 
@@ -45,7 +52,7 @@ def check_input_files_exist(nml_path):
         print("\nERROR: The following required input file(s) are missing:\n")
         for f in missing:
             print(f"  {f}")
-            if f.endswith("config__traktor_playlists_to_sync.csv"):
+            if str(f).endswith("config__traktor_playlists_to_sync.csv"):
                 print(CONFIG_FILE_FORMAT)
         return False
 
@@ -62,24 +69,24 @@ def is_file_locked(filepath):
         return True
 
 
-def check_output_files_unlocked():
+def check_output_files_unlocked(output_dirs, output_static_files):
     """
     Scan all output CSVs before the pipeline runs.
     If any are open/locked, print them and return False.
     """
     locked = []
 
-    for directory in OUTPUT_DIRS:
+    for directory in output_dirs:
         dir_path = Path(directory)
         if dir_path.exists():
             for csv_file in dir_path.glob("*.csv"):
                 if is_file_locked(csv_file):
                     locked.append(str(csv_file))
 
-    for static_file in OUTPUT_STATIC_FILES:
+    for static_file in output_static_files:
         p = Path(static_file)
         if p.exists() and is_file_locked(p):
-            locked.append(static_file)
+            locked.append(str(static_file))
 
     if locked:
         print("\nERROR: The following output file(s) are open (e.g. in Excel).")
@@ -92,25 +99,13 @@ def check_output_files_unlocked():
     return True
 
 
-# Define the scripts to run in order
-SCRIPTS = [
-    r"C:\studio\rmldata\playlist-dev\traktor_collection_load.py",
-    r"C:\studio\rmldata\playlist-dev\traktor_playlists_from_collection.py",
-    r"C:\studio\rmldata\playlist-dev\traktor_spotify_playlist_compare.py",
-    r"C:\studio\rmldata\playlist-dev\traktor_spotify_playlist_join.py",
-]
-
-# traktor_collection_load.py is the only script that needs the NML path
-NML_SCRIPT = r"C:\studio\rmldata\playlist-dev\traktor_collection_load.py"
-
-
 def run_script(script_path, extra_args=None):
-    """Run a Python script and return the result."""
+    """Run a Python script and return True on success."""
     print(f"\n{'='*80}")
     print(f"Running: {Path(script_path).name}")
     print(f"{'='*80}\n")
 
-    cmd = [sys.executable, script_path] + (extra_args or [])
+    cmd = [sys.executable, str(script_path)] + (extra_args or [])
     result = subprocess.run(cmd, capture_output=False, text=True)
 
     if result.returncode != 0:
@@ -122,32 +117,51 @@ def run_script(script_path, extra_args=None):
 
 
 def main():
-    """Run all scripts in sequence."""
-    if len(sys.argv) < 2:
-        print("ERROR: No collection path provided.")
-        print("Usage: python run_all_scripts.py \"C:\\path\\to\\collection.nml\"")
+    if len(sys.argv) < 3:
+        print("ERROR: Two arguments are required.")
+        print('Usage: python run_all_scripts.py "C:\\path\\to\\collection.nml" "C:\\path\\to\\repo\\"')
         sys.exit(1)
 
     nml_path = sys.argv[1]
+    repo_path = validate_repo_path(sys.argv[2])
+
+    # Derive all paths from the validated repo root
+    output_dirs = [
+        repo_path / "Traktor",
+        repo_path / "Joined",
+    ]
+    output_static_files = [
+        repo_path / "traktor_spotify_playlist_compare.csv",
+    ]
+    config_file = repo_path / "config__traktor_playlists_to_sync.csv"
+    scripts = [
+        repo_path / "traktor_collection_load.py",
+        repo_path / "traktor_playlists_from_collection.py",
+        repo_path / "traktor_spotify_playlist_compare.py",
+        repo_path / "traktor_spotify_playlist_join.py",
+    ]
+    nml_script = repo_path / "traktor_collection_load.py"
+
     print(f"Starting playlist processing pipeline...")
+    print(f"Repository:      {repo_path}")
     print(f"Collection file: {nml_path}")
 
-    if not check_input_files_exist(nml_path):
+    if not check_input_files_exist(nml_path, config_file):
         sys.exit(1)
 
-    if not check_output_files_unlocked():
+    if not check_output_files_unlocked(output_dirs, output_static_files):
         sys.exit(1)
 
-    print(f"Total scripts to run: {len(SCRIPTS)}\n")
+    print(f"Total scripts to run: {len(scripts)}\n")
 
-    for i, script in enumerate(SCRIPTS, 1):
-        print(f"\n[{i}/{len(SCRIPTS)}] Processing: {Path(script).name}")
+    for i, script in enumerate(scripts, 1):
+        print(f"\n[{i}/{len(scripts)}] Processing: {script.name}")
 
-        if not Path(script).exists():
+        if not script.exists():
             print(f"ERROR: Script not found: {script}")
             sys.exit(1)
 
-        extra_args = [nml_path] if script == NML_SCRIPT else None
+        extra_args = [nml_path] if script == nml_script else None
         if not run_script(script, extra_args):
             print("\nPipeline failed. Stopping execution.")
             sys.exit(1)

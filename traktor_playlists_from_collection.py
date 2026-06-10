@@ -166,7 +166,8 @@ def main():
     # Read the config file (playlist names to sync)
     print(f"\nReading config file: {config_file}")
     config_df = pd.read_csv(config_file)
-    playlist_names = config_df['playlist_name'].dropna().tolist()
+    col = config_df['playlist_name_in_both_spotify_and_traktor'].dropna().str.strip()
+    playlist_names = col[col != ''].tolist()
     print(f"Found {len(playlist_names)} playlists to export")
 
     # Read the playlists CSV
