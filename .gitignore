@@ -39,9 +39,17 @@ Thumbs.db
 
 # Data / secrets
 *.csv
-*.xlsx
 *.json
 !package.json
 *.key
 *.pem
 secrets.*
+
+# Excel UI and all Excel formats
+*.xls
+*.xlsx
+*.xlsb
+*.xltx
+*.xltm
+*.xlam
+!*.xlsm
