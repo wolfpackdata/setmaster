@@ -38,7 +38,8 @@ Thumbs.db
 *.log
 
 # Data / secrets
-*.csv
+**/*.csv
+!/*.csv
 *.json
 !package.json
 *.key
