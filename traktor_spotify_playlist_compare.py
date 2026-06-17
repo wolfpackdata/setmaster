@@ -71,9 +71,10 @@ def compare_playlists():
     """
 
     # Directory paths
-    traktor_dir = r"C:\studio\rmldata\playlist-dev\Traktor"
-    spotify_dir = r"C:\studio\rmldata\playlist-dev\Exportify"
-    output_file = r"C:\studio\rmldata\playlist-dev\traktor_spotify_playlist_compare.csv"
+    _here = Path(__file__).parent
+    traktor_dir = _here / "Traktor"
+    spotify_dir = _here / "Exportify"
+    output_file = _here / "traktor_spotify_playlist_compare.csv"
 
     print("="*70)
     print("Traktor vs Spotify Playlist Comparison")

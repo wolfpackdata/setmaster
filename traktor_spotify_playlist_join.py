@@ -381,11 +381,12 @@ def main():
     """Main function to process all playlist pairs."""
 
     # File paths
-    mapping_file = r"C:\studio\rmldata\playlist-dev\traktor_spotify_playlist_compare.csv"
-    traktor_full_collection_file = r"C:\studio\rmldata\playlist-dev\Traktor\traktor_collection_tracks.csv"
-    traktor_dir = r"C:\studio\rmldata\playlist-dev\Traktor"
-    spotify_dir = r"C:\studio\rmldata\playlist-dev\Exportify"
-    output_dir = r"C:\studio\rmldata\playlist-dev\Joined"
+    _here = Path(__file__).parent
+    mapping_file = _here / "traktor_spotify_playlist_compare.csv"
+    traktor_full_collection_file = _here / "Traktor" / "traktor_collection_tracks.csv"
+    traktor_dir = _here / "Traktor"
+    spotify_dir = _here / "Exportify"
+    output_dir = _here / "Joined"
 
     print("="*70)
     print("Traktor-Spotify Playlist Join Tool")

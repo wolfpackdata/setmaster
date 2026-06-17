@@ -156,7 +156,7 @@ def main():
 
         # Create DataFrame and save to CSV
         tracks_df = pd.DataFrame(tracks)
-        tracks_csv_path = r"C:\studio\rmldata\playlist-dev\Traktor\traktor_collection_tracks.csv"
+        tracks_csv_path = Path(__file__).parent / "Traktor" / "traktor_collection_tracks.csv"
         tracks_df.to_csv(tracks_csv_path, index=False, encoding='utf-8-sig')
         print(f"Saved tracks to: {tracks_csv_path}")
         print(f"Columns: {list(tracks_df.columns)}")
@@ -179,7 +179,7 @@ def main():
             track_key_to_title = tracks_df.set_index('track_key')['title'].to_dict()
             playlists_df['track_name'] = playlists_df['track_key'].map(track_key_to_title)
 
-        playlists_csv_path = r"C:\studio\rmldata\playlist-dev\Traktor\traktor_collection_playlists.csv"
+        playlists_csv_path = Path(__file__).parent / "Traktor" / "traktor_collection_playlists.csv"
         playlists_df.to_csv(playlists_csv_path, index=False, encoding='utf-8-sig')
         print(f"Saved playlists to: {playlists_csv_path}")
         print(f"Columns: {list(playlists_df.columns)}")

@@ -3,6 +3,7 @@ Traktor Playlist Exporter
 Exports individual playlist CSV files from Traktor collection based on config file.
 """
 
+import sys
 import pandas as pd
 import os
 from pathlib import Path
@@ -19,7 +20,7 @@ def extract_filename_from_track_key(track_key):
     return track_key
 
 
-def build_track_playlist_matrix():
+def build_track_playlist_matrix(root_folder_name=""):
     """Build a matrix of tracks vs playlists from traktor_collection_playlists.csv.
 
     Creates a table with:
@@ -27,7 +28,7 @@ def build_track_playlist_matrix():
       - Column 2: artist_name
       - Column 3: track_name
       - Column 4: release_date
-      - Column 5: root_playlist_appearances (playlists in the "RML root" folder)
+      - Column 5: root_playlist_appearances (playlists in the root folder)
       - Column 6: nonroot_playlist_appearances (playlists in any other folder)
       - Column 7+: one column per unique playlist_name, with the track_name
         in cells where that track appears in the playlist.
@@ -35,16 +36,23 @@ def build_track_playlist_matrix():
     Saves the result to traktor_track_playlist_matrix.csv.
     """
 
-    playlists_file = r"C:\studio\rmldata\playlist-dev\Traktor\traktor_collection_playlists.csv"
-    tracks_file = r"C:\studio\rmldata\playlist-dev\Traktor\traktor_collection_tracks.csv"
-    output_file = r"C:\studio\rmldata\playlist-dev\Traktor\traktor_track_playlist_matrix.csv"
+    _here = Path(__file__).parent
+    playlists_file = _here / "Traktor" / "traktor_collection_playlists.csv"
+    tracks_file = _here / "Traktor" / "traktor_collection_tracks.csv"
+    output_file = _here / "Traktor" / "traktor_track_playlist_matrix.csv"
 
     print("="*70)
     print("Building Track-Playlist Matrix")
     print("="*70)
 
-    # Playlist name prefixes to exclude from the matrix
-    excluded_prefixes = ('album_', 'tyler_', 'halim_', 'bui_', 'adam_', 'zzz','sm_','wip___bui')
+    # Load playlist name prefixes to exclude from the matrix
+    prefix_config = _here / "config__playlist_prefix_to_exclude.csv"
+    if prefix_config.exists():
+        prefix_df = pd.read_csv(prefix_config)
+        excluded_prefixes = tuple(prefix_df['playlist_prefixes_exclude'].dropna().str.strip().tolist())
+    else:
+        excluded_prefixes = ()
+    print(f"\nLoaded {len(excluded_prefixes)} exclusion prefix(es) from config")
 
     # Read the playlists CSV
     print(f"\nReading playlists file: {playlists_file}")
@@ -103,8 +111,17 @@ def build_track_playlist_matrix():
     # Merge artist_name and release_date from tracks data
     pivot = pivot.merge(tracks_df[['track_key', 'artist_name', 'release_date', 'bpm', 'key', 'import_date', 'album_title', 'last_played', 'playcount']], on='track_key', how='left')
 
-    # Separate playlist columns into RML root vs non-root using playlist_folder from source data
-    root_playlists = df[df['playlist_folder'] == 'RML root']['playlist_name'].unique()
+    # Separate playlist columns into root vs non-root using playlist_folder from source data
+    root_playlists = df[df['playlist_folder'].str.lower() == root_folder_name.lower()]['playlist_name'].unique() if root_folder_name else []
+
+    if not root_folder_name:
+        print("\nNote: No root folder name was provided.")
+        print("  'On Root PL' counts will be 0 for all tracks.\n")
+    elif len(root_playlists) == 0:
+        print(f"\nWarning: Root folder '{root_folder_name}' was not found in the collection.")
+        print(f"  'On Root PL' counts will be 0 for all tracks.")
+        print(f"  Check the --playlist-arg value and try again.\n")
+
     playlist_cols = [c for c in pivot.columns if c not in ('track_key', 'track_name', 'artist_name', 'release_date', 'bpm', 'key', 'import_date', 'album_title', 'last_played', 'playcount')]
     root_cols = [c for c in playlist_cols if c in root_playlists]
     nonroot_cols = [c for c in playlist_cols if c not in root_playlists]
@@ -151,10 +168,11 @@ def main():
     """Main function to export playlist CSV files."""
 
     # File paths
-    config_file = r"C:\studio\rmldata\playlist-dev\config__traktor_playlists_to_sync.csv"
-    playlists_file = r"C:\studio\rmldata\playlist-dev\Traktor\traktor_collection_playlists.csv"
-    tracks_file = r"C:\studio\rmldata\playlist-dev\Traktor\traktor_collection_tracks.csv"
-    output_dir = r"C:\studio\rmldata\playlist-dev\Traktor"
+    _here = Path(__file__).parent
+    config_file = _here / "config__traktor_playlists_to_sync.csv"
+    playlists_file = _here / "Traktor" / "traktor_collection_playlists.csv"
+    tracks_file = _here / "Traktor" / "traktor_collection_tracks.csv"
+    output_dir = _here / "Traktor"
 
     print("="*70)
     print("Traktor Playlist Exporter")
@@ -269,7 +287,8 @@ def main():
     print("="*70)
 
     # Build the track-playlist matrix
-    build_track_playlist_matrix()
+    root_folder_name = sys.argv[1] if len(sys.argv) > 1 else ""
+    build_track_playlist_matrix(root_folder_name)
 
 
 if __name__ == "__main__":
