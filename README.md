@@ -2,7 +2,7 @@
 
 A Python ETL pipeline for DJs managing large music libraries across **Traktor Pro 4** and **Spotify**. Extracts your Traktor collection, exports playlists, compares and joins them against Spotify exports, and produces a full **track-playlist matrix** for analysis — all in one command.
 
-Interface is Excel workbook "RML SetMaster Public V##.XLSM", download from this repository.
+Interface is Excel workbook "RML SetMaster Public V##.XLSM", download from "setmaster" public repository.
 
 ---
 

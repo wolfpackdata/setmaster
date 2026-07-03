@@ -80,6 +80,16 @@ def compare_playlists():
     print("Traktor vs Spotify Playlist Comparison")
     print("="*70)
 
+    # Validate Exportify folder before proceeding
+    if not spotify_dir.exists():
+        print(f"\nERROR: Exportify folder not found at: {spotify_dir}")
+        print("Please create the folder and add your Spotify CSV exports before running this script.")
+        return None
+    if not any(spotify_dir.iterdir()):
+        print(f"\nERROR: Exportify folder is empty: {spotify_dir}")
+        print("Please add your Spotify CSV exports to the Exportify folder before running this script.")
+        return None
+
     # Get files from both directories
     print(f"\nScanning Traktor directory: {traktor_dir}")
     traktor_files = get_playlist_files(traktor_dir, exclude_prefix="traktor_collection_")
