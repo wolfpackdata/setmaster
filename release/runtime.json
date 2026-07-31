@@ -1,0 +1,20 @@
+{
+  "_comment": "Pinned self-contained CPython used in SetMaster 3 release payloads (#179). Source: astral-sh/python-build-standalone 'install_only' builds, which are relocatable and need nothing preinstalled on the user's machine. Bump deliberately: change the release/version, refresh every sha256 from that release's SHA256SUMS, then rebuild and re-run the artifact smoke check.",
+  "python_version": "3.14.6",
+  "pbs_release": "20260728",
+  "base_url": "https://github.com/astral-sh/python-build-standalone/releases/download/20260728",
+  "targets": {
+    "windows-x64": {
+      "asset": "cpython-3.14.6+20260728-x86_64-pc-windows-msvc-install_only.tar.gz",
+      "sha256": "daf2b7e973cd19a2ffe14a0e9f78ccc0834b970f2b426c57bcf4e71738a18dd6"
+    },
+    "macos-arm64": {
+      "asset": "cpython-3.14.6+20260728-aarch64-apple-darwin-install_only.tar.gz",
+      "sha256": "1c7e8db27d1f5c029c232406103b7216baaa8a32a900a64f6dee20f8eaaca1af"
+    },
+    "macos-x64": {
+      "asset": "cpython-3.14.6+20260728-x86_64-apple-darwin-install_only.tar.gz",
+      "sha256": "26e384a6000a2c6e7484bca9c6441553c0c9f701c87dcd2e632d994edd000e9c"
+    }
+  }
+}

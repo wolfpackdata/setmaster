@@ -1,0 +1,226 @@
+/* App shell (§4): persistent left sidebar + main content pane. */
+
+.shell {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sidebar {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border-subtle);
+  user-select: none;
+  min-height: 0;
+}
+
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 8px 0 12px;
+  flex: 0 0 auto;
+}
+
+.sidebar--collapsed .sidebar__header {
+  flex-direction: column;
+  height: auto;
+  padding: 8px 0;
+  gap: 6px;
+}
+
+.sidebar__mark {
+  width: 22px;
+  height: 19px;
+  flex: 0 0 auto;
+}
+
+.sidebar__wordmark {
+  flex: 1;
+  font-size: calc(15px * var(--type-scale));
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar__wordmark .rml {
+  color: var(--text-primary);
+}
+.sidebar__wordmark .setmaster {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.sidebar__collapse {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  border-radius: var(--radius-input);
+  cursor: pointer;
+}
+.sidebar__collapse:hover {
+  background: var(--bg-row-hover);
+  color: var(--text-primary);
+}
+
+.sidebar__nav {
+  padding: 4px 0;
+  border-top: 1px solid var(--border-subtle);
+  flex: 0 0 auto;
+}
+
+.sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--tree-row-height);
+  padding: 0 12px;
+  color: var(--text-primary);
+  font-size: calc(13px * var(--type-scale));
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+.sidebar__item:hover {
+  background: var(--bg-row-hover);
+  text-decoration: none;
+}
+.sidebar__item.active {
+  background: var(--bg-selected);
+}
+.sidebar__item .icon {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+}
+/* Long labels (e.g. "Spotify®-Traktor® Comparison Settings") truncate with an
+   ellipsis at the 260px width instead of hard-clipping; full text stays in the
+   row title tooltip. */
+.sidebar__item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar__item.active .icon {
+  color: var(--text-primary);
+}
+
+.sidebar--collapsed .sidebar__item {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar__sets {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 4px;
+}
+
+.sidebar__sets-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  flex: 0 0 auto;
+}
+
+.sidebar__tree {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+  padding-bottom: 4px;
+}
+
+.tree__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--tree-row-height);
+  padding-right: 8px;
+  font-size: calc(13px * var(--type-scale));
+  color: var(--text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+.tree__row:hover {
+  background: var(--bg-row-hover);
+}
+.tree__row.active {
+  background: var(--bg-selected);
+}
+.tree__row .icon {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+}
+.tree__disclosure {
+  width: 14px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: calc(9px * var(--type-scale));
+}
+.tree__label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tree__count {
+  color: var(--text-muted);
+  font-size: calc(11px * var(--type-scale));
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar__bottom {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--border-subtle);
+  padding: 4px 0;
+}
+
+.sidebar__resize {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+}
+.sidebar__resize:hover {
+  background: rgb(61 123 253 / 0.35);
+}
+
+.shell__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-app);
+}
+
+/* §8 responsive notes: the 1024–1439px sidebar auto-collapse and the <1024px
+   "best on a larger screen" notice are handled in JS (Sidebar.tsx/Layout.tsx
+   via matchMedia) so the persisted collapse state stays authoritative. */

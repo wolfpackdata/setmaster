@@ -1,0 +1,222 @@
+/* S8 — Spotify®-Traktor® Comparison Settings (03-ui-design.md §5.8). */
+
+.s8 {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--space-6);
+  overflow: hidden;
+}
+
+.s8__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap; /* §5.8 responsive: toolbar wraps */
+  margin-bottom: var(--space-4);
+}
+
+/* Anchor-rendered buttons (Open Exportify) must not pick up link underline. */
+.s8 a.btn:hover {
+  text-decoration: none;
+}
+
+.s8__stale {
+  font-size: var(--type-small-size);
+  color: var(--text-secondary);
+}
+
+.s8__panels {
+  display: flex;
+  gap: var(--space-4);
+  flex: 1;
+  min-height: 0;
+}
+
+.s8-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+}
+.s8-panel--traktor {
+  flex: 55 1 0;
+}
+.s8-panel--spotify {
+  flex: 45 1 0;
+}
+
+/* Sticky panel header: uppercase 11px label + count (§5.8). */
+.s8-panel__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+  flex: none;
+}
+
+.s8-panel__search {
+  margin-left: auto;
+  background: var(--bg-input);
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: var(--radius-input) var(--radius-input) 0 0;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: calc(12px * var(--type-scale));
+  padding: 4px 8px;
+  width: 180px;
+}
+.s8-panel__search:focus {
+  outline: none;
+  border-bottom-color: var(--accent-blue);
+}
+
+/* Each panel is its own scroll region (§5.8). */
+.s8-panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ---- Traktor panel rows: checkbox · name · coverage slot ---- */
+.s8-trow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--grid-row-height);
+  padding: 0 12px;
+  font-size: var(--grid-font-size);
+  cursor: pointer;
+}
+.s8-trow:nth-child(even) {
+  background: var(--bg-row-alt);
+}
+.s8-trow:hover {
+  background: var(--bg-row-hover);
+}
+.s8-trow__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+.s8-trow__coverage {
+  font-size: var(--type-small-size);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.s8-trow__coverage--muted {
+  color: var(--text-muted);
+}
+.s8-trow__coverage--warn {
+  color: var(--status-warn);
+}
+
+/* ---- Spotify panel rows ---- */
+.s8-srow {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-height: var(--grid-row-height);
+  padding: 5px 12px;
+  font-size: var(--grid-font-size);
+}
+.s8-srow:nth-child(even) {
+  background: var(--bg-row-alt);
+}
+/* no-match / conflict: soft red row fill (§5.8), text kept ≥4.5:1 */
+.s8-srow--danger,
+.s8-srow--danger:nth-child(even) {
+  background: rgb(217 48 48 / 0.16);
+}
+
+.s8-srow__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.s8-srow__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.s8-srow__meta {
+  font-family: var(--font-mono);
+  font-size: var(--type-small-size);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.s8-srow__icon--ok {
+  color: var(--status-success);
+  display: inline-flex;
+}
+.s8-srow__icon--danger {
+  color: var(--status-danger);
+  display: inline-flex;
+}
+.s8-srow__expand {
+  border: none;
+  background: none;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+.s8-srow__helper {
+  font-size: var(--type-small-size);
+  color: var(--text-primary);
+  padding: 2px 0 2px 24px;
+}
+.s8-srow__helper .mono {
+  font-size: calc(10px * var(--type-scale));
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+/* ---- §7.1 empty states ---- */
+.s8-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  height: 100%;
+}
+.s8-empty p {
+  font-size: calc(13px * var(--type-scale));
+  line-height: 1.55;
+  color: var(--text-secondary);
+  max-width: 340px;
+}
+
+/* §5.8 responsive 1024–1439px: panels stack vertically, Traktor first. */
+@media (max-width: 1439px) {
+  .s8 {
+    overflow-y: auto;
+  }
+  .s8__panels {
+    flex-direction: column;
+  }
+  .s8-panel {
+    flex: none;
+    max-height: 45vh;
+    min-height: 220px;
+  }
+}

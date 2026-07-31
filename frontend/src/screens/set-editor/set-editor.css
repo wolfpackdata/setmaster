@@ -1,0 +1,846 @@
+/*
+ * S2 Set Editor styles (03-ui-design.md §5.2, §6.1, §6.5).
+ * Borderless grid: NO gridlines / cell borders anywhere — structure comes
+ * from row striping, tabular-nums, column-group spacing and the tinted
+ * Out/In group headers. Box borders (§6.5) are user annotation drawn as
+ * inset box-shadows (overlay, not chrome).
+ */
+
+.se {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+
+/* ---- Toolbar --------------------------------------------------------- */
+
+.se-toolbar {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+  min-height: 48px;
+}
+
+.se-title {
+  font-size: var(--type-display-size);
+  font-weight: var(--type-display-weight);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 32ch;
+}
+
+/* §7.3 "Saving…" / "All changes saved" — subtle text indicator */
+.se-save {
+  font-size: var(--type-small-size);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.se-save--saving {
+  color: var(--text-secondary);
+}
+.se-save--error {
+  color: var(--status-danger);
+}
+
+.se-tb-spring {
+  flex: 1;
+}
+
+.se-tb-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.se-tb-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border-subtle);
+  margin: 0 var(--space-1);
+}
+
+.se-tb-label {
+  font-size: calc(10px * var(--type-scale));
+  font-weight: var(--type-label-weight);
+  letter-spacing: var(--type-label-tracking);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-right: 2px;
+  white-space: nowrap;
+}
+
+/* Formatting buttons carry a small swatch of what they do (§6.5). */
+.se-fbtn::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+.se-fbtn--red::before {
+  background: var(--status-danger);
+}
+.se-fbtn--yellow::before {
+  background: var(--status-warn);
+}
+.se-fbtn--box::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--text-primary);
+}
+.se-fbtn--clear::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--text-muted);
+}
+
+/* ⋯ overflow menu (§5.2) */
+.se-menu {
+  position: absolute;
+  top: calc(100% - 4px);
+  right: var(--space-3);
+  z-index: 40;
+  min-width: 190px;
+  background: var(--bg-popover);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-popover);
+  padding: var(--space-1);
+}
+.se-menu__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-input);
+  color: var(--text-primary);
+  font-size: var(--type-body-size);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.se-menu__item:hover:not(:disabled) {
+  background: var(--bg-row-hover);
+}
+.se-menu__item:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+.se-menu__hint {
+  float: right;
+  margin-left: 16px;
+  color: var(--text-muted);
+  font-size: var(--type-small-size);
+}
+
+/* Column-overflow popover (§8, 1024–1439px) */
+.se-colmenu {
+  position: absolute;
+  top: calc(100% - 4px);
+  right: 52px;
+  z-index: 40;
+  background: var(--bg-popover);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-popover);
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.se-colmenu label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--type-body-size);
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+/* ---- Stats bar (the four SM2 stats, §5.2) ----------------------------- */
+
+.se-stats {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: 6px var(--space-4);
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.se-stat {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.se-stat__value {
+  font-size: calc(14px * var(--type-scale));
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.se-stat__value--empty {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+/* #82: the Mix Length H:MM value renders in the annotation orange. */
+.se-stat__value--minlen {
+  color: var(--accent-orange);
+}
+/* #82: red incomplete-timing warning symbol beside Mix Length. */
+.se-stat__warn {
+  color: var(--status-danger);
+  font-size: calc(13px * var(--type-scale));
+  line-height: 1;
+  cursor: default;
+}
+
+/* ---- Grid ------------------------------------------------------------- */
+
+.se-gridwrap {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  outline: none;
+  background: var(--bg-app);
+}
+/* Focus ring lives on cells, not the scroll container. */
+.se-gridwrap:focus-visible {
+  outline: none;
+}
+
+/* The grid's floor is its own content, not a magic number (#132). The tracks in
+   `tracksFor()` have a real minimum — fixed widths plus the `minmax()` minima —
+   and a hardcoded floor that lands under it lets the rows overflow their own
+   boxes: cells paint past the right edge while row striping, §6.5 fills and the
+   .se-head rule all stop at the floor. `min-content` resolves to the track
+   minimum exactly, so it stays correct as columns are added, resized or
+   hidden. */
+.se-grid {
+  position: relative;
+  min-width: min-content;
+  padding-bottom: 48px;
+}
+
+.se-row,
+.se-ghead,
+.se-head {
+  display: grid;
+  /* grid-template-columns set inline from columns.ts */
+  align-items: stretch;
+}
+
+/* Group-header row: magenta Out Track / cyan In Track (§5.2) */
+.se-ghead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: 22px;
+  background: var(--bg-app);
+}
+.se-ghead__group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  letter-spacing: var(--type-label-tracking);
+  text-transform: uppercase;
+  border-radius: 3px 3px 0 0;
+  user-select: none;
+}
+.se-ghead__group--out {
+  color: var(--brand-magenta);
+  background: rgba(255, 79, 216, 0.12);
+}
+.se-ghead__group--in {
+  color: var(--brand-cyan);
+  background: rgba(77, 232, 232, 0.12);
+}
+/* OUT TRACK TIMING super-header (#72): same magenta tint/font as Out Track,
+   spanning M # / T # / PLAY TIME. */
+.se-ghead__group--timing {
+  color: var(--brand-magenta);
+  background: rgba(255, 79, 216, 0.12);
+}
+
+/* Column-label row (uppercase 11px --text-secondary, sticky, §6.1) */
+.se-head {
+  position: sticky;
+  top: 22px;
+  z-index: 5;
+  min-height: 32px;
+  background: var(--bg-app);
+  border-bottom: 1px solid var(--border-subtle); /* panel edge, not a gridline */
+}
+.se-head__cell {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  padding: 2px 8px 5px;
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  letter-spacing: var(--type-label-tracking);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  line-height: 1.15;
+  user-select: none;
+  overflow: hidden;
+}
+.se-head__cell--center {
+  justify-content: center;
+  text-align: center;
+}
+.se-head__cell--right {
+  justify-content: flex-end;
+  text-align: right;
+}
+.se-head__cell--out {
+  background: rgba(255, 79, 216, 0.04);
+}
+.se-head__cell--in {
+  background: rgba(77, 232, 232, 0.04);
+}
+
+/* §5.2 Out-Track timing hint on the M #/T # header tooltip */
+.se-htip {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 20;
+  width: 230px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-popover);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-popover);
+  color: var(--text-primary);
+  font-size: calc(12px * var(--type-scale));
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.4;
+  white-space: normal;
+  text-align: left;
+}
+.se-head__cell:hover .se-htip {
+  display: block;
+}
+.se-htip__badge {
+  display: inline-block;
+  color: var(--brand-cyan); /* In Track (kept available) */
+  font-size: calc(10px * var(--type-scale));
+  font-weight: 600;
+  letter-spacing: var(--type-label-tracking);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+/* Out Track attribution (Start/Transition timing tooltips, §25). */
+.se-htip__badge--out {
+  color: var(--brand-magenta);
+}
+
+/* #26 — focusable ⓘ "How to use Move" info button + hover/focus tooltip.
+   Own class (NOT .se-htip); reuses the popover tokens only. */
+.se-info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.se-info__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: var(--radius-input);
+  color: var(--text-muted);
+  font-size: calc(15px * var(--type-scale));
+  line-height: 1;
+  cursor: help;
+}
+.se-info__btn:hover,
+.se-info__btn:focus-visible {
+  color: var(--text-primary);
+}
+.se-info__pop {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: var(--space-1);
+  z-index: 40;
+  width: 260px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-popover);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-popover);
+  color: var(--text-primary);
+  font-size: calc(12px * var(--type-scale));
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.5;
+  white-space: normal;
+  text-align: left;
+}
+.se-info:hover .se-info__pop,
+.se-info__btn:focus-visible + .se-info__pop {
+  display: block;
+}
+.se-info__title {
+  display: block;
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.se-info__steps {
+  margin: 0;
+  padding-left: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.se-info__steps li {
+  padding-left: 2px;
+}
+.se-info__tip {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+/* Data rows: striping only — never borders (§5.2) */
+.se-body .se-row {
+  height: var(--grid-row-height);
+}
+.se-body .se-row:nth-child(odd) {
+  background: var(--bg-row);
+}
+.se-body .se-row:nth-child(even) {
+  background: var(--bg-row-alt);
+}
+.se-body .se-row:hover {
+  background: var(--bg-row-hover);
+}
+.se-body .se-row--dragsrc {
+  opacity: 0.45;
+}
+
+/* Drag handle gutter (hover-revealed; always visible on touch, §8) */
+.se-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: grab;
+  opacity: 0;
+  user-select: none;
+  font-size: calc(11px * var(--type-scale));
+  letter-spacing: 1px;
+}
+.se-row:hover .se-handle,
+.se-handle--visible {
+  opacity: 1;
+}
+@media (pointer: coarse) {
+  .se-handle {
+    opacity: 1;
+  }
+}
+
+/* Cells */
+.se-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: var(--grid-font-size);
+  min-width: 0;
+}
+.se-cell--center {
+  justify-content: center;
+}
+.se-cell--right {
+  justify-content: flex-end;
+}
+/* #145 — "Loud T # Column" / "Loud M # Column": the CUE columns take their
+   group's super-header colour (Out Track magenta / In Track cyan), referenced
+   as tokens so a palette change carries. Both default off. A manual RED/YELLOW
+   fill suppresses this at render time (those fills have their text contrast
+   tuned for the default colour), and the #83 cue highlight still overrides via
+   its higher-specificity `.se-cell.se-cell--cue-hl` rule. */
+.se-cell--loud-t_num {
+  color: var(--brand-magenta);
+}
+.se-cell--loud-m_num {
+  color: var(--brand-cyan);
+}
+
+/* #138 — BPM direction cue vs the row above. The NUMBER's colour is
+   deliberately untouched; only the glyph carries the signal, and it takes the
+   existing RED / YELLOW highlight tokens rather than new hex so a palette
+   change can never drift them apart. `em` sizing keeps it proportional across
+   the whole Font Size range. */
+.se-bpmarrow {
+  flex: none;
+  font-size: 0.75em;
+  line-height: 1;
+  margin-right: 2px;
+}
+.se-bpmarrow--up {
+  color: var(--status-warn);
+}
+.se-bpmarrow--down {
+  color: var(--status-danger);
+}
+
+/* #134 — the BPM column is sized to exactly three tabular digits, so it trims
+   its padding to 4px a side (cell, header and inline editor alike) to keep the
+   right-aligned value off the column edge without reintroducing dead space. */
+.se-cell[data-c="bpm"],
+.se-head__cell[data-c="bpm"] {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+.se-cell[data-c="bpm"] .se-editor {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+/* ~4% group tint wash on the out/in halves (§5.2) */
+.se-cell--out {
+  background: rgba(255, 79, 216, 0.04);
+}
+.se-cell--in {
+  background: rgba(77, 232, 232, 0.04);
+}
+
+/* §6.5 fills — shades derived from the semantic tokens, tuned so cell text
+   keeps ≥4.5:1 on both stripes (verified: #e6e6e6 on the mixes below). */
+.se-cell--fill-red {
+  background: color-mix(in srgb, var(--status-danger) 52%, var(--bg-row));
+}
+.se-cell--fill-yellow {
+  background: color-mix(in srgb, var(--status-warn) 38%, var(--bg-row));
+}
+
+/* #83 — OUT TRACK TIMING cue-cell highlight: solid bright-orange fill + dark
+   text on the target cue cell while a timing cell is the single selection /
+   being edited. Higher specificity than the manual RED/YELLOW/out/in fills so
+   it layers above them; render-time only — the manual fill reappears untouched
+   when the highlight clears. */
+.se-cell.se-cell--cue-hl {
+  background: var(--accent-orange);
+  color: #000;
+}
+.se-cell.se-cell--cue-hl .se-empty,
+.se-cell.se-cell--cue-hl .se-legacy {
+  color: #000;
+}
+
+/* #83, widened by #165 — first-row read-only Out-side cell (OUT TRACK TIMING,
+   BPM, Key): muted em-dash placeholder (distinct from the `---` empty-enum
+   text) or a muted legacy value. Row 1 has no Out Track, so all four describe
+   nothing and read the same way. */
+.se-rocell {
+  color: var(--text-muted);
+}
+
+/* Selection overlay (single cell / rectangular range / full rows) */
+.se-cell--sel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(61, 123, 253, 0.22);
+  pointer-events: none;
+}
+
+.se-calc {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.se-ellip {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.se-empty {
+  color: var(--text-muted);
+}
+
+.se-ghost {
+  color: var(--text-muted);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.se-emoji {
+  font-size: calc(15px * var(--type-scale));
+  line-height: 1;
+}
+
+/* [TAG] bracketed name-prefix chip (§5.2) */
+.se-tagchip {
+  display: inline-block;
+  font-size: calc(10px * var(--type-scale));
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0 5px;
+  margin-right: 6px;
+  border-radius: 3px;
+  background: #262626;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  line-height: 16px;
+  vertical-align: 1px;
+}
+
+/* Legacy-value marker (§4.4) */
+.se-legacy {
+  color: var(--text-muted);
+  margin-left: 4px;
+  cursor: help;
+}
+
+/* 2px blue insertion line while dragging rows (§5.2) */
+.se-insertline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--accent-blue);
+  z-index: 6;
+  pointer-events: none;
+}
+
+/* ---- Inline editors ---------------------------------------------------- */
+
+.se-editor {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-input);
+  border: none;
+  outline: 2px solid var(--accent-blue);
+  outline-offset: -2px;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--grid-font-size);
+  padding: 0 8px;
+  z-index: 2;
+}
+.se-editor--area {
+  resize: none;
+  padding-top: calc((var(--grid-row-height) - var(--grid-font-size) - 6px) / 2);
+  line-height: 1.3;
+  white-space: pre;
+  overflow: hidden;
+}
+.se-editor--emoji {
+  text-align: center;
+}
+.se-editor.invalid {
+  outline-color: var(--status-danger);
+}
+/* Inline rejection message for Start/Transition M:SS validation (§25).
+   position:fixed (coords set inline) escapes the cell's overflow:hidden. */
+.se-editor-msg {
+  z-index: 61;
+  width: max-content;
+  max-width: 220px;
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg-popover);
+  border: 1px solid var(--status-danger);
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow-popover);
+  color: var(--text-primary);
+  font-size: calc(11px * var(--type-scale));
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: 1.35;
+  white-space: normal;
+  text-align: left;
+  pointer-events: none;
+}
+
+.se-enumwrap {
+  position: absolute;
+  inset: 0;
+  outline: 2px solid var(--accent-blue);
+  outline-offset: -2px;
+  z-index: 2;
+}
+
+/* Popovers (dropdown, typeahead, emoji quick-pick) — position:fixed inline */
+.se-pop {
+  z-index: 60;
+  background: var(--bg-popover);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-popover);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 3px;
+}
+.se-pop--typeahead {
+  width: 340px;
+}
+.se-pop__filter {
+  padding: 2px 9px 4px;
+  font-family: var(--font-mono);
+  font-size: var(--type-small-size);
+  color: var(--accent-orange);
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 3px;
+}
+.se-pop__none {
+  padding: 6px 10px;
+  color: var(--text-muted);
+  font-size: var(--type-body-size);
+}
+.se-pop__opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 4px 9px;
+  border-radius: var(--radius-input);
+  font-size: var(--type-body-size);
+  cursor: pointer;
+  min-width: 0;
+}
+.se-pop__opt.hi {
+  background: var(--bg-selected);
+}
+.se-pop__opt.cur {
+  color: var(--accent-blue);
+}
+.se-pop__opt.hi.cur {
+  color: var(--text-primary);
+}
+.se-pop__artist {
+  color: var(--text-secondary);
+  font-size: var(--type-small-size);
+  flex: none;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.se-pop--emoji {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+}
+.se-pop__emoji {
+  font-size: calc(16px * var(--type-scale));
+  background: none;
+  border: none;
+  border-radius: var(--radius-input);
+  padding: 4px 7px;
+  cursor: pointer;
+  line-height: 1;
+}
+.se-pop__emoji:hover {
+  background: var(--bg-row-hover);
+}
+
+/* ---- Loading / error states -------------------------------------------- */
+
+.se-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  color: var(--text-secondary);
+}
+
+/* ---- Export dialog (§5.2 ⋯ menu · set-export.md) ----------------------- */
+
+.se-export {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.se-export__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.se-export__chips {
+  display: flex;
+  gap: var(--space-2);
+}
+/* NI toggle chips (§6.2): inactive = dark chip / muted text, active =
+   --accent-orange fill / black text. */
+.se-chip {
+  flex: 1;
+  padding: 7px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-input);
+  color: var(--text-secondary);
+  font-size: var(--type-body-size);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+.se-chip:hover:not(:disabled):not(.se-chip--on) {
+  background: var(--bg-row-hover);
+  color: var(--text-primary);
+}
+.se-chip--on {
+  background: var(--accent-orange);
+  border-color: var(--accent-orange);
+  color: #000;
+}
+.se-chip:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.se-export__name {
+  width: 100%;
+  padding: 7px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-input);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--type-body-size);
+}
+.se-export__name:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+.se-export__name:disabled {
+  opacity: 0.6;
+}
+.se-export__error {
+  color: var(--status-danger);
+  font-size: var(--type-small-size);
+  line-height: 1.4;
+}

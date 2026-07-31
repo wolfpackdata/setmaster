@@ -1,0 +1,386 @@
+/* S5 — Playlist Compare Tool (03-ui-design.md §5.5, comparison-output-table.md). */
+
+.cmp {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--space-6);
+  overflow: hidden;
+}
+
+.cmp__header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+}
+/* The constant page title (#21) owns its own line; the playlist name and
+   summary stats wrap onto the row below it. */
+.cmp__header .screen-title {
+  flex-basis: 100%;
+}
+
+/* Secondary line (#21): which playlist these stats describe — prominent
+   enough to read at a glance, but subordinate to the constant <h1> title
+   and leading the summary stats. */
+.cmp__playlist-name {
+  font-size: calc(15px * var(--type-scale));
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.cmp__summary {
+  font-size: calc(13px * var(--type-scale));
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Per-playlist page tabs (page inventory follows the S8 config, §9). */
+.cmp__tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+.cmp__tab {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--radius-input);
+  font-size: calc(12px * var(--type-scale));
+  color: var(--text-secondary);
+  background: transparent;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.cmp__tab:hover {
+  background: var(--bg-row-hover);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+/* Selected page tab: orange, mirroring the matrix active-filter buttons
+   (.mx-line__on--on) so "selected" reads consistently across screens (#22). */
+.cmp__tab--active,
+.cmp__tab--active:hover {
+  background: var(--accent-orange);
+  border-color: var(--accent-orange);
+  color: #000;
+}
+
+/* Filters row (§8): active state always visible. */
+.cmp__filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+.cmp__filters .ni-label {
+  margin-right: 2px;
+}
+.cmp__count {
+  margin-left: auto;
+  font-size: calc(12px * var(--type-scale));
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Flag filter chips: colored dot + label, pressed state. */
+.cmp-flagchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: calc(11px * var(--type-scale));
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+.cmp-flagchip--on {
+  border-color: var(--accent-blue);
+  background: var(--bg-selected);
+  color: var(--text-primary);
+}
+.cmp-flagchip__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* Columns show/hide popover (#20) — mirrors the matrix .mx-colmenu shell,
+   fixed-positioned by the anchor rect, no drag/reorder (compare order is
+   fixed). Non-hideable rows render disabled + checked. */
+.cmp-colmenu {
+  position: fixed;
+  z-index: 120;
+  background: var(--bg-popover);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-popover);
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.cmp-colmenu__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  font-size: calc(12px * var(--type-scale));
+  border-radius: var(--radius-input);
+}
+.cmp-colmenu__row:hover {
+  background: var(--bg-row-hover);
+}
+.cmp-colmenu__label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cmp-colmenu__row input:disabled + .cmp-colmenu__label {
+  color: var(--text-muted);
+}
+
+/* Banners: staleness + post-run notes summary. */
+.cmp-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 8px 12px;
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--border-subtle);
+  font-size: calc(12px * var(--type-scale));
+  margin-bottom: var(--space-3);
+}
+.cmp-banner--warn {
+  border-color: rgb(232 185 59 / 0.5);
+  color: var(--status-warn);
+}
+.cmp-banner--info {
+  border-color: rgb(33 192 99 / 0.5);
+  color: var(--status-success);
+}
+.cmp-banner__dismiss {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: calc(12px * var(--type-scale));
+  padding: 0 4px;
+}
+
+/* ---- The table (§6.1 grid style: borderless, striped, sticky header) ---- */
+.cmp__tablewrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  background: var(--bg-row);
+}
+
+/* Table-region loading state on tab switch: the header/tabs/filter chrome
+   stays mounted, only this region swaps to a placeholder while the new
+   playlist's rows load (#22 — no whole-screen remount/flicker). */
+.cmp__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: var(--space-6);
+}
+
+.cmp-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.cmp-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-panel);
+  text-align: left;
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  letter-spacing: var(--type-label-tracking);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  height: 30px;
+  padding: 0 10px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.cmp-table th .sort-arrow {
+  color: var(--accent-blue);
+  font-size: calc(9px * var(--type-scale));
+  margin-left: 4px;
+}
+
+.cmp-table tbody tr:nth-child(even) {
+  background: var(--bg-row-alt);
+}
+.cmp-table tbody tr:hover {
+  background: var(--bg-row-hover);
+}
+
+.cmp-table td {
+  height: var(--grid-row-height);
+  padding: 0 10px;
+  font-size: var(--grid-font-size);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Flag chips (§4/§5.5): gap flags loudest. */
+.cmp-flag {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 8px;
+  border-radius: 9px;
+  font-size: calc(11px * var(--type-scale));
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.cmp-flag--quiet {
+  background: var(--bg-row-hover);
+}
+.cmp-flag--loud {
+  color: #000;
+}
+
+/* Blank-cell notes (§5): un-noted Traktor gaps keep the soft gold fill; noted
+   cells drop the fill and inherit the row/stripe background — the note text
+   goes orange (upright, #23 QA follow-up) to read as an annotation. Orange on
+   both dark stripes clears AA (≥5.4:1). */
+.cmp-note {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  cursor: text;
+}
+td.cmp-cell--gold {
+  background: rgb(232 185 59 / 0.18);
+}
+.cmp-note__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--accent-orange);
+}
+.cmp-note__input {
+  width: 100%;
+  background: var(--bg-input);
+  border: none;
+  border-bottom: 1px solid var(--accent-blue);
+  color: var(--accent-orange);
+  font-family: inherit;
+  font-size: var(--grid-font-size);
+  padding: 3px 6px;
+}
+.cmp-note__input:focus {
+  outline: none;
+}
+
+/* Local-file reveal + Spotify link actions. */
+.cmp-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: none;
+  color: var(--accent-blue);
+  font-size: calc(12px * var(--type-scale));
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--radius-input);
+  text-decoration: none;
+}
+.cmp-action:hover {
+  background: var(--bg-row-hover);
+  text-decoration: none;
+}
+
+/* Index list of comparison pages. */
+.cmp-index {
+  max-width: 720px;
+}
+.cmp-index__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--grid-row-height);
+  padding: 0 12px;
+  font-size: var(--grid-font-size);
+}
+.cmp-index__row:nth-child(even) {
+  background: var(--bg-row-alt);
+}
+.cmp-index__row:hover {
+  background: var(--bg-row-hover);
+}
+.cmp-index__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cmp-index__counts {
+  font-size: var(--type-small-size);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* §7.1 empty state. */
+.cmp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  padding: var(--space-6);
+  max-width: 520px;
+}
+.cmp-empty p {
+  font-size: calc(13px * var(--type-scale));
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+/* #142 — markdown links inside a comparison note. Underlined so they read as
+   links against the note's own orange text, and they must not swallow the
+   cell's "click to edit" affordance (handled in the click handler). */
+.cmp-note__link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.cmp-note__link:hover {
+  color: var(--accent-blue);
+}
