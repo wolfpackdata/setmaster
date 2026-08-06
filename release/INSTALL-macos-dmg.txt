@@ -1,0 +1,73 @@
+SetMaster - macOS
+=================
+
+Apple Silicon Macs only (M1 or newer), running macOS 14 (Sonoma) or later.
+Intel Macs are not supported.
+
+If your Mac is Apple Silicon but still on an older macOS, updating is free and
+is all that is needed - every Apple Silicon Mac can run Sonoma.
+
+TO INSTALL
+----------
+1. Double-click the .dmg file you downloaded.
+2. Drag the SetMaster icon onto the Applications folder shown beside it.
+3. Eject the disk image (click the eject arrow next to it in Finder).
+
+That's it. There is nothing else to install - SetMaster brings its own copy
+of Python, so you do not need Python, Node, or a terminal.
+
+TO START
+--------
+Open SetMaster from Applications, or from Launchpad.
+
+It should open normally the first time and every time. If macOS ever asks
+you to right-click and choose Open, or sends you to Privacy & Security,
+something is wrong with the download - please report it rather than working
+around it.
+
+Nothing much seems to happen for a couple of seconds, then SetMaster opens
+in your normal web browser at http://127.0.0.1:8137. That "127.0.0.1" means
+it is running on your own computer, not on a website.
+
+TO STOP  -  RIGHT-CLICK THE DOCK ICON AND CHOOSE QUIT
+-----------------------------------------------------
+When you are done for the day: RIGHT-CLICK (or Control-click) the SetMaster
+icon in the Dock and choose Quit.
+
+That is the whole thing. It shuts down the part of SetMaster that runs in the
+background.
+
+Two things worth knowing, because neither is obvious:
+
+- CLOSING THE BROWSER TAB DOES NOT STOP IT. The tab is just a window onto
+  SetMaster; SetMaster itself keeps running. Quitting your browser doesn't stop
+  it either.
+- THE DOCK ICON IS HOW YOU KNOW IT IS STILL RUNNING. If SetMaster is in your
+  Dock, it is up. Click that icon any time to bring the tab back - it reopens
+  instantly.
+
+Leaving it running is harmless - it uses almost nothing while idle, and it only
+ever listens on your own machine. Right-click - Quit is simply how you close it
+properly when you are finished.
+
+GOOD TO KNOW
+------------
+- You do not need Traktor to use SetMaster. Preparing sets is what it is
+  mainly for, and that works with no collection loaded at all - just start a
+  set and type. Reading your Traktor collection is a second, optional half
+  that adds the collection and comparison screens.
+- SetMaster never changes your Traktor collection. It only reads
+  collection.nml; it never writes to it or to any Native Instruments file.
+- It works fully offline and makes no internet connections.
+- Your sets, notes, formatting and settings live in
+  ~/Library/Application Support/SetMaster3, not inside the app - so replacing
+  SetMaster with a newer version never touches your data.
+- Logs, if you ever need them, are in ~/Library/Logs/SetMaster3.
+
+TO UNINSTALL
+------------
+Drag SetMaster from Applications to the Trash. To remove your data as well,
+also delete ~/Library/Application Support/SetMaster3 - but note that this is
+where all your sets and notes live, so it cannot be undone.
+
+More detail, including Windows: launchers/README.md in the source repository.

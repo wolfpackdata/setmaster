@@ -1,0 +1,108 @@
+/*
+ * SetMaster 3 — design tokens.
+ * Normative source: planning/03-ui-design.md §3.1–3.4.
+ * Dark theme only (v1). Hex values are canonical — do not tweak here;
+ * contrast-adjusted key colors are DERIVED at runtime (src/lib/color.ts), the
+ * palette below stays the canonical identity (§9).
+ */
+
+:root {
+  /* ---- §3.1 Surfaces ---- */
+  --bg-app: #0a0a0a; /* app background behind panels */
+  --bg-panel: #141414; /* sidebar, toolbars, cards */
+  --bg-row: #1a1a1a; /* data grid row */
+  --bg-row-alt: #151515; /* alternating row stripe */
+  --bg-row-hover: #232323;
+  --bg-selected: #2a4a7f; /* row/tree selection — Traktor sidebar blue */
+  --bg-input: #101010;
+  --bg-popover: #1e1e1e; /* §3.3 elevation by lightness step */
+  --border-subtle: #2a2a2a; /* panel edges only — never between grid cells */
+
+  /* ---- §3.1 Text ---- */
+  --text-primary: #e6e6e6; /* track names, values */
+  --text-secondary: #9c9c9c; /* column headers (uppercase), paths, secondary metadata */
+  --text-muted: #5e5e5e; /* disabled, placeholders, "---" empty values */
+
+  /* ---- §3.1 NI accents ---- */
+  --accent-orange: #ff6a00; /* attention, active/armed states */
+  --accent-blue: #3d7bfd; /* focus rings, active indicators, links */
+
+  /* ---- §3.1 SM2 brand accents ---- */
+  --brand-magenta: #ff4fd8; /* Out Track identity */
+  --brand-cyan: #4de8e8; /* In Track identity */
+  --brand-purple: #9b5cff; /* wordmark accent, section headings */
+  --brand-coral: #ff5c5c; /* secondary section headings */
+
+  /* ---- §3.1 Semantic ---- */
+  --status-success: #21c063; /* pipeline "Completed" chip, confirmed flags */
+  --status-warn: #e8b93b; /* warnings; base for YELLOW cell shading */
+  --status-danger: #d93030; /* errors; base for RED cell shading */
+
+  /* ---- §3.1 Key colors (canonical `load`-tab palette, Camelot-wheel order).
+     Contrast-adjusted variants are derived at runtime — see src/lib/keys.ts. */
+  --key-c: #f20d0d; /* Crimson Red */
+  --key-am: #f23f0d; /* Vermilion */
+  --key-g: #f2710d; /* Tangerine */
+  --key-em: #f2a20d; /* Amber */
+  --key-d: #f2d40d; /* Golden Yellow */
+  --key-bm: #def20d; /* Lime Yellow */
+  --key-a: #acf20d; /* Chartreuse */
+  --key-gbm: #7bf20d; /* Spring Green */
+  --key-e: #49f20d; /* Emerald */
+  --key-dbm: #17f20d; /* Fresh Green */
+  --key-b: #0df235; /* Mint */
+  --key-abm: #0df267; /* Aquamarine */
+  --key-gb: #0df298; /* Teal */
+  --key-ebm: #0df2ca; /* Turquoise */
+  --key-db: #0de8f2; /* Sky Blue */
+  --key-bbm: #0db6f2; /* Azure */
+  --key-ab: #0d84f2; /* Cobalt */
+  --key-fm: #0d53f2; /* Royal Blue */
+  --key-eb: #0d21f2; /* Indigo */
+  --key-cm: #2b0df2; /* Violet */
+  --key-bb: #5d0df2; /* Deep Violet */
+  --key-gm: #8e0df2; /* Purple */
+  --key-f: #c00df2; /* Orchid */
+  --key-dm: #f20df2; /* Magenta */
+
+  /* ---- §3.2 Typography ---- */
+  --font-ui: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Global type scale — one-line app-wide resize (issue #2, +10%).
+     Every --type-*-size / --grid-font-size and every component-level px
+     font-size literal multiplies through this factor. */
+  --type-scale: 1.1;
+
+  --type-display-size: calc(20px * var(--type-scale)); /* wordmark, screen titles */
+  --type-display-weight: 700;
+  --type-heading-size: calc(15px * var(--type-scale)); /* panel/section headings (brand accent colors) */
+  --type-heading-weight: 600;
+  --type-label-size: calc(11px * var(--type-scale)); /* NI label style — uppercase, letterspaced */
+  --type-label-weight: 600;
+  --type-label-tracking: 0.06em;
+  --type-body-size: calc(13px * var(--type-scale)); /* grid cell text (desktop; user-adjustable §3.5) */
+  --type-small-size: calc(11px * var(--type-scale)); /* file paths, timestamps, footnotes */
+
+  /* ---- §3.3 Spacing, radii, elevation ---- */
+  --space-1: 4px; /* 4px base unit */
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-input: 4px; /* inputs, chips */
+  --radius-panel: 6px; /* panels, buttons */
+  --shadow-popover: 0 8px 24px rgb(0 0 0 / 0.5); /* popovers/modals ONLY */
+
+  /* ---- §3.4 Grid metrics (defaults; runtime-recomputed from §3.5 options:
+     row-height = font-size + round(19px × spacing / 100), floored at font+8) ---- */
+  --grid-row-height: 32px;
+  /* Pre-load fallback only. settingsStore.applyDisplay() overwrites this inline
+     on :root with (font_size × TYPE_SCALE); the inline value REPLACES this decl
+     (it does not compound with the calc below) — see R2, no double-scaling. */
+  --grid-font-size: calc(13px * var(--type-scale));
+  --tree-row-height: 28px; /* §4 sidebar tree rows */
+  --sidebar-width: 260px;
+  --sidebar-rail-width: 48px;
+}

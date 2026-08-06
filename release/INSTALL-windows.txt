@@ -1,0 +1,46 @@
+SetMaster 3 - Windows
+=====================
+
+Nothing to install. This folder contains everything SetMaster 3 needs,
+including its own copy of Python - you do not need Python, Node, or a
+terminal.
+
+TO START
+--------
+1. Unzip this folder somewhere you keep your programs, for example
+   C:\Users\<you>\SetMaster3   (do not run it from inside the zip)
+2. Open the "launchers" folder.
+3. Double-click "SetMaster 3.vbs".
+
+Nothing much seems to happen for a few seconds, then SetMaster 3 opens in
+your normal web browser at http://127.0.0.1:8137. That "127.0.0.1" means it
+is running on your own computer - not on a website.
+
+Tip: right-click "SetMaster 3.vbs" and choose Send to -> Desktop (create
+shortcut) to get a desktop shortcut you can rename to "SetMaster 3".
+
+TO STOP
+-------
+Double-click "Stop SetMaster 3.vbs" in the same folder. It only ever stops
+SetMaster 3: if another program happens to be using SetMaster 3's address,
+it tells you so and leaves that program alone.
+
+IF THE NORMAL LAUNCHER DOESN'T WORK
+-----------------------------------
+Double-click "SetMaster 3 (troubleshoot).cmd" instead. It keeps a black
+window open so you can read what is happening and see any error message.
+
+GOOD TO KNOW
+------------
+- You do not need Traktor to use SetMaster 3. Preparing sets is what it is
+  mainly for, and that works with no collection loaded at all - just start a
+  set and type. Reading your Traktor collection is a second, optional half
+  that adds the collection and comparison screens.
+- SetMaster 3 never changes your Traktor collection. It only reads
+  collection.nml; it never writes to it or to any Native Instruments file.
+- It works fully offline and makes no internet connections.
+- Your sets, notes, formatting and settings live in your Windows app-data
+  folder, not in this program folder - so replacing this folder with a newer
+  version does not touch your data.
+
+More detail, including macOS: launchers\README.md

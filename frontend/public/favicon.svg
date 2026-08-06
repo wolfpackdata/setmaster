@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 152 152">
+  <!-- RML sunset mark as the browser-tab icon (issue #143). The mark's geometry
+       and gradient stops are copied verbatim from docs/design/brand/rml-mark.svg;
+       only the framing is new.
+
+       The plate is not decoration. Measured at 16x16, the bare mark loses 28% of
+       its pixels to low contrast against light browser chrome (the pale bottom of
+       the sun gradient washing out on white). On this plate that drops to 10%,
+       and dark chrome improves too (4% -> 2%). #5B2E7E sits between the mark's own
+       #96409F and #2E2670 triangle stops, so it comes from the mark's palette
+       rather than being an invented colour.
+
+       RML is our own developer mark — nothing Native Instruments(R) or Traktor(R)
+       goes anywhere near an icon (03-ui-design.md 1.3). -->
+  <defs>
+    <linearGradient id="rml-sun" x1="0" y1="8" x2="0" y2="80" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E2836D"/>
+      <stop offset="1" stop-color="#F0E5A6"/>
+    </linearGradient>
+    <linearGradient id="rml-tri" x1="0" y1="86" x2="0" y2="131" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#96409F"/>
+      <stop offset="1" stop-color="#2E2670"/>
+    </linearGradient>
+  </defs>
+  <rect width="152" height="152" rx="27" fill="#5B2E7E"/>
+  <g transform="translate(-6 19.01) scale(0.82)">
+    <path fill="url(#rml-sun)" d="M28 80 A72 72 0 0 1 172 80 Z"/>
+    <path fill="url(#rml-tri)" d="M57 86 H143 L100 131 Z"/>
+  </g>
+</svg>

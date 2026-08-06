@@ -1,0 +1,35 @@
+{
+  "name": "setmaster3-frontend",
+  "private": true,
+  "version": "3.0.4",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "e2e:launcher": "node e2e/check-launcher.mjs"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.2.5",
+    "@fontsource/jetbrains-mono": "^5.2.5",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.13.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.18.2",
+    "zustand": "^5.0.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/react": "^18.3.20",
+    "@types/react-dom": "^18.3.6",
+    "@vitejs/plugin-react": "^4.4.1",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.1.4"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
+  }
+}

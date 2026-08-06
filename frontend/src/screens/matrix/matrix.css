@@ -1,0 +1,1095 @@
+/* S3 — Track-Playlist Matrix. Borderless striped grid per 03-ui-design.md
+   §6.1 (no gridlines ever; structure = stripes + tabular-nums + whitespace),
+   NI-style chrome (§6.2), FX-channel filter drawer (feature spec §5). */
+
+.mx-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+
+/* ---- Toolbar ---- */
+.mx-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+  flex: none;
+  min-height: 44px;
+}
+.mx-toolbar__title {
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-display-weight);
+  margin-right: var(--space-2);
+  white-space: nowrap;
+}
+.mx-toolbar__count {
+  font-size: var(--type-small-size);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.mx-toolbar__spacer {
+  flex: 1;
+}
+.mx-toolbar__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.mx-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--accent-orange);
+  color: #000;
+  font-size: calc(10px * var(--type-scale));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Icon close/clear button (drawer header + sentence-preview reuse) ---- */
+.mx-crumb__clear {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: var(--radius-input);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.mx-crumb__clear:hover {
+  color: var(--status-danger);
+  background: var(--bg-row-hover);
+}
+
+/* ---- Comparison-skipped notice (issue #5) ----
+   Calm, informational strip below the toolbar when a run built the matrix but
+   skipped the Spotify® comparison (empty Exportify). Info tone (blue), NOT the
+   danger/red error styling — the run succeeded. */
+.mx-notice {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: color-mix(in srgb, var(--accent-blue) 10%, var(--bg-panel));
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: var(--type-small-size);
+  line-height: 1.5;
+}
+.mx-notice__icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent-blue);
+}
+.mx-notice a {
+  color: var(--accent-blue);
+}
+
+/* ---- Search row (issue #15) ----
+   Free-text find across Artist / Album / Track, in the band #12 vacated (the
+   old breadcrumb strip). Sits directly under the toolbar, above the grid.
+   Magnifier icon + input + in-box ✕ clear (visible only when non-empty). */
+.mx-search {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.mx-search__icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+.mx-search__input {
+  flex: 1;
+  min-width: 0;
+  max-width: 520px;
+  height: 28px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-input);
+  background: var(--bg-input, var(--bg-base));
+  color: var(--text-primary);
+  font-size: var(--type-small-size);
+}
+.mx-search__input::placeholder {
+  color: var(--text-secondary);
+}
+.mx-search__input:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+.mx-search__clear {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: calc(-1 * var(--space-1, 4px));
+  border: none;
+  border-radius: var(--radius-input);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.mx-search__clear:hover {
+  color: var(--status-danger);
+  background: var(--bg-row-hover);
+}
+
+/* ---- Main area: grid + drawer side by side (table stays visible, §11.5) ---- */
+.mx-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* ---- Grid ---- */
+.mx-gridwrap {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+.mx-scroll {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  background: var(--bg-app);
+}
+.mx-inner {
+  position: relative;
+}
+.mx-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.mx-header__frozen {
+  position: sticky;
+  left: 0;
+  z-index: 31;
+  display: flex;
+  background: var(--bg-panel);
+  box-shadow: 1px 0 0 var(--border-subtle);
+}
+.mx-hcell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 8px;
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  letter-spacing: var(--type-label-tracking);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  user-select: none;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.mx-hcell--pl {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: var(--bg-panel);
+}
+/* Issue #7 — column-header states. A tinted accent fill + bold accent label +
+   a solid accent underline makes the whole header obviously colored while the
+   always-orange sort arrow stays readable. Orange (filtered) WINS over blue
+   (sorted) when a column is both (Ry ruling); the rules follow .mx-hcell--pl
+   so the tint overrides the playlist header's panel background. */
+.mx-hcell--sorted {
+  background: color-mix(in srgb, var(--accent-blue) 26%, var(--bg-panel));
+  color: var(--accent-blue);
+  box-shadow: inset 0 -2px 0 var(--accent-blue);
+}
+.mx-hcell--filtered {
+  background: color-mix(in srgb, var(--accent-orange) 30%, var(--bg-panel));
+  color: var(--accent-orange);
+  box-shadow: inset 0 -2px 0 var(--accent-orange);
+}
+/* Colored, slightly heavier header label to reinforce the state. */
+.mx-hcell--sorted .mx-hcell__label,
+.mx-hcell--filtered .mx-hcell__label {
+  color: inherit;
+  font-weight: 700;
+}
+/* Keep the label readable on hover instead of dropping back to --text-primary. */
+.mx-hcell--sorted .mx-hcell__label:hover,
+.mx-hcell--filtered .mx-hcell__label:hover {
+  color: inherit;
+  filter: brightness(1.25);
+}
+/* On a filtered header the funnel is already surfaced; keep it orange and
+   fully visible (it would otherwise be hidden until hover). */
+.mx-hcell--filtered .mx-hcell__filter {
+  opacity: 1;
+  color: var(--accent-orange);
+}
+.mx-hcell__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  text-align: inherit;
+  border: none;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  padding: 0;
+}
+.mx-hcell__label:hover {
+  color: var(--text-primary);
+}
+/* Issue #80 — two-line wrapped header (Play Count / On Super Playlist / On
+   Non-Super Playlist). The label stacks its two verbatim lines and centers
+   them vertically in the taller header row; at the default width neither line
+   ellipsizes. Sort arrow and funnel keep their inline placement to the right. */
+.mx-hcell__label--wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  line-height: 1.08;
+  white-space: normal;
+  text-overflow: clip;
+}
+/* Each line clips independently, so a manual drag narrower than the two-line
+   width (issue #80 AC4) truncates gracefully with a normal ellipsis. */
+.mx-hcell__line {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* §6.1 / issue #7 sort indicator: small always-orange triangle. Orange on
+   every header state (plain, blue "sorted", orange "filtered") so sort
+   direction stays visible; the text-shadow keeps it legible on the tinted
+   "sorted"/"filtered" header fills. */
+.mx-hcell__sort {
+  flex: none;
+  color: var(--accent-orange);
+  font-size: calc(8px * var(--type-scale));
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.55);
+}
+.mx-hcell__sortlevel {
+  font-size: calc(9px * var(--type-scale));
+  font-variant-numeric: tabular-nums;
+}
+.mx-hcell__filter {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: var(--radius-input);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  padding: 0;
+}
+.mx-hcell:hover .mx-hcell__filter,
+.mx-hcell__filter--active,
+.mx-hcell__filter:focus-visible {
+  opacity: 1;
+}
+.mx-hcell__filter:hover {
+  color: var(--text-primary);
+  background: var(--bg-row-hover);
+}
+.mx-hcell__filter--active {
+  color: var(--accent-orange);
+}
+.mx-hcell__resize {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 7px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 2;
+}
+.mx-hcell__resize:hover,
+.mx-hcell__resize--dragging {
+  background: var(--accent-blue);
+  opacity: 0.5;
+}
+
+/* ---- Body rows ---- */
+.mx-body {
+  position: relative;
+}
+.mx-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: stretch;
+  font-size: var(--grid-font-size);
+}
+.mx-row--even {
+  background: var(--bg-row);
+}
+.mx-row--odd {
+  background: var(--bg-row-alt);
+}
+.mx-row__frozen {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  background: inherit;
+  box-shadow: 1px 0 0 var(--border-subtle);
+}
+.mx-cell {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+.mx-cell > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+.mx-cell--num {
+  font-variant-numeric: tabular-nums;
+  justify-content: flex-end;
+  text-align: right;
+}
+.mx-cell--center {
+  justify-content: center;
+  text-align: center;
+}
+.mx-cell--pl {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  color: var(--text-secondary);
+  font-size: calc(var(--grid-font-size) - 1px);
+}
+/* Track Name emphasis (§11.10) — SM2's cyan carried as brand-cyan text. */
+.mx-cell--trackname {
+  color: var(--brand-cyan);
+  font-weight: 500;
+}
+/* Play Count 0/1 = red never/rarely-played marker (§11.2, §11.9). */
+.mx-cell--playred {
+  color: var(--status-danger);
+  font-weight: 600;
+}
+/* On Super Playlist count — green (§3). */
+.mx-cell--root {
+  color: var(--status-success);
+}
+/* On Non-Super Playlist — magenta, cell highlighted when > 0 (§3). */
+.mx-cell--nonroot {
+  color: var(--brand-magenta);
+}
+.mx-cell--nonroot-hit {
+  background: rgb(255 79 216 / 0.16);
+  font-weight: 600;
+}
+.mx-cell--muted {
+  color: var(--text-muted);
+}
+
+.mx-cell--mono {
+  font-family: var(--font-mono);
+  font-size: calc(var(--grid-font-size) - 1px);
+}
+
+/* ---- Empty / loading states (§7.1) ---- */
+.mx-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+}
+.mx-empty__box {
+  max-width: 460px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+.mx-empty__title {
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+  color: var(--brand-purple);
+}
+.mx-empty__text {
+  font-size: calc(13px * var(--type-scale));
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.mx-empty__text a {
+  color: var(--accent-blue);
+}
+
+/* Toolbar buttons carry a small icon before their label. */
+.mx-toolbar .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* "Clear All Filters" ACTIVE state (issue #10): bright blue when any filter is
+   set — a DELIBERATE action affordance ("there's something to clear"), NOT the
+   orange filter-engaged state color (#7). Ry ruling 2026-07-07: do not restyle
+   this orange for consistency. Idle, it inherits the plain dark .btn styling so
+   it reads the same as the Columns button. */
+.mx-clear-active {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: #fff;
+  font-weight: 600;
+}
+.mx-clear-active:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-blue) 82%, #fff);
+  border-color: color-mix(in srgb, var(--accent-blue) 82%, #fff);
+}
+
+/* ---- Filter drawer (§5 — FX-channel styling) ---- */
+.mx-drawer {
+  flex: none;
+  width: 384px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border-subtle);
+  min-height: 0;
+}
+.mx-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  flex: none;
+}
+.mx-drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mx-drawer__footer {
+  flex: none;
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--space-2) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.mx-drawer__preview {
+  font-size: calc(12px * var(--type-scale));
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.mx-drawer__preview strong {
+  color: var(--text-primary);
+}
+.mx-drawer__buttons {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+/* Wrapper carries the tooltip — a disabled <button> swallows hover (#9). */
+.mx-drawer__apply-wrap {
+  display: inline-flex;
+}
+/* "Skip Apply" live-filter toggle (#9). */
+.mx-drawer__skipapply {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: calc(12px * var(--type-scale));
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+.mx-drawer__skipapply input {
+  cursor: pointer;
+  margin: 0;
+}
+.mx-drawer__sentence {
+  font-size: calc(11px * var(--type-scale));
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-height: 64px;
+  overflow-y: auto;
+}
+.mx-drawer__sentence strong {
+  color: var(--accent-blue);
+  font-weight: 600;
+}
+
+/* One FX-slot line: ON toggle far left, label, controls (§5). */
+.mx-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 4px;
+  border-radius: var(--radius-input);
+}
+.mx-line + .mx-line {
+  border-top: 1px solid var(--border-subtle);
+}
+.mx-line--off .mx-line__body {
+  opacity: 0.45;
+}
+/* FX-slot enable button: dark chip off, orange lit on (§6.2 badge pattern). */
+.mx-line__on {
+  flex: none;
+  width: 26px;
+  height: 20px;
+  margin-top: 1px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-input);
+  background: var(--bg-input);
+  color: var(--text-muted);
+  font-size: calc(9px * var(--type-scale));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  padding: 0;
+}
+.mx-line__on--on {
+  background: var(--accent-orange);
+  border-color: var(--accent-orange);
+  color: #000;
+}
+.mx-line__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mx-line__label {
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  letter-spacing: var(--type-label-tracking);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.mx-line__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mx-line__controls .input {
+  padding: 4px 8px;
+  font-size: calc(12px * var(--type-scale));
+}
+.mx-line__num {
+  width: 72px;
+}
+.mx-line__year {
+  width: 72px;
+}
+.mx-line__date {
+  width: 128px;
+}
+.mx-line__dash {
+  color: var(--text-muted);
+}
+.mx-wheelbtns {
+  display: flex;
+  gap: 8px;
+}
+
+/* Camelot wheel */
+.mx-wheel {
+  align-self: center;
+}
+.mx-wheel__seg {
+  cursor: pointer;
+  outline: none;
+}
+.mx-wheel__seg:hover path {
+  fill-opacity: 0.45;
+}
+.mx-wheel__seg--on:hover path {
+  fill-opacity: 1;
+}
+.mx-wheel--disabled .mx-wheel__seg {
+  cursor: default;
+}
+
+/* Dual-handle slider */
+.mx-slider {
+  position: relative;
+  flex: 1;
+  min-width: 80px;
+  height: 20px;
+  cursor: pointer;
+  touch-action: none;
+}
+.mx-slider__track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 9px;
+  height: 2px;
+  background: var(--border-subtle);
+  border-radius: 1px;
+}
+.mx-slider__fill {
+  position: absolute;
+  top: 9px;
+  height: 2px;
+  background: var(--accent-blue);
+  border-radius: 1px;
+}
+.mx-slider__handle {
+  position: absolute;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  border: 2px solid var(--bg-panel);
+  box-shadow: 0 0 0 1px var(--border-subtle);
+}
+.mx-slider--disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+/* Grabbable fill band — dragging slides the whole window (issue #75). */
+.mx-slider__fill {
+  cursor: grab;
+}
+.mx-slider--disabled .mx-slider__fill {
+  cursor: default;
+}
+
+/* BPM range preset hot buttons (issue #75) — a full-width row above the slider,
+   four evenly-spaced FX-unit chips extending the drawer's Traktor-FX language. */
+.mx-bpm-presets {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  align-items: stretch;
+}
+.mx-bpm-preset {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+}
+.mx-bpm-preset__btn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 4px 4px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-input);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  cursor: pointer;
+  overflow: hidden;
+}
+.mx-bpm-preset__btn--on {
+  background: var(--accent-orange);
+  border-color: var(--accent-orange);
+  color: #000;
+}
+.mx-bpm-preset__name {
+  font-size: calc(10px * var(--type-scale));
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mx-bpm-preset__range {
+  font-size: calc(9px * var(--type-scale));
+  opacity: 0.85;
+}
+/* Pencil edit affordance — appears on hover of the preset chip. */
+.mx-bpm-preset__edit {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0;
+}
+.mx-bpm-preset:hover .mx-bpm-preset__edit,
+.mx-bpm-preset__edit:focus-visible {
+  opacity: 0.7;
+}
+.mx-bpm-preset__edit:hover {
+  opacity: 1;
+}
+/* Editor popover (name + min/max + save) — anchored over its chip, breaking out
+   of the ¼-width flex slot so the fields and Save button have room (issue #75
+   follow-up). Cancel is implied by Esc or clicking outside. */
+.mx-bpm-edit-pop {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  z-index: 20;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--accent-orange);
+  border-radius: var(--radius-input);
+  background: var(--bg-panel, var(--bg-input));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+/* Right-half chips grow leftward so the popover stays inside the drawer. */
+.mx-bpm-edit-pop--right {
+  left: auto;
+  right: -4px;
+}
+.mx-bpm-edit__name {
+  width: 100%;
+  padding: 3px 6px;
+  font-size: calc(11px * var(--type-scale));
+}
+.mx-bpm-edit__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.mx-bpm-edit__num {
+  width: 100%;
+  min-width: 0;
+  padding: 3px 6px;
+  font-size: calc(11px * var(--type-scale));
+}
+.mx-bpm-edit__error {
+  color: var(--accent-red, #e5484d);
+  font-size: calc(10px * var(--type-scale));
+}
+.mx-bpm-edit__btns {
+  display: flex;
+  gap: 4px;
+}
+
+/* Quick sort segmented control (§5 bottom of drawer) */
+.mx-quicksort {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.mx-quicksort__opt {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-input);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: calc(10px * var(--type-scale));
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.mx-quicksort__opt--on {
+  background: var(--accent-orange);
+  border-color: var(--accent-orange);
+  color: #000;
+}
+
+/* Playlist combobox (drawer line 1) */
+.mx-combo {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.mx-combo__list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--bg-popover);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow-popover);
+  z-index: 50;
+}
+.mx-combo__opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-size: calc(12px * var(--type-scale));
+  padding: 5px 8px;
+  cursor: pointer;
+}
+.mx-combo__opt:hover,
+.mx-combo__opt--hi {
+  background: var(--bg-selected);
+}
+.mx-combo__root {
+  color: var(--status-success);
+  font-size: calc(10px * var(--type-scale));
+  margin-left: 6px;
+}
+
+/* ---- Header filter popover ---- */
+.mx-popover {
+  position: fixed;
+  z-index: 120;
+  width: 260px;
+  background: var(--bg-popover);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-popover);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.mx-popover__title {
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  letter-spacing: var(--type-label-tracking);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mx-popover__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mx-popover__row .input {
+  padding: 4px 8px;
+  font-size: calc(12px * var(--type-scale));
+}
+.mx-popover__picklist {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-input);
+  background: var(--bg-input);
+}
+.mx-popover__pick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  font-size: calc(12px * var(--type-scale));
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.mx-popover__pick:hover {
+  background: var(--bg-row-hover);
+}
+.mx-popover__pick input {
+  flex: none;
+}
+.mx-popover__pick span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mx-popover__foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.mx-popover__hint {
+  font-size: calc(10px * var(--type-scale));
+  color: var(--text-muted);
+}
+/* Release Date year-only quick-filter presets (issue #60). */
+.mx-popover__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.mx-popover__presets .btn {
+  padding: 2px 7px;
+  font-size: calc(11px * var(--type-scale));
+}
+
+/* ---- Columns menu ---- */
+.mx-colmenu {
+  position: fixed;
+  z-index: 120;
+  width: 240px;
+  background: var(--bg-popover);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-popover);
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.mx-colmenu__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  font-size: calc(12px * var(--type-scale));
+  border-radius: var(--radius-input);
+  cursor: grab;
+}
+.mx-colmenu__row:hover {
+  background: var(--bg-row-hover);
+}
+.mx-colmenu__row--dragging {
+  opacity: 0.4;
+}
+.mx-colmenu__grip {
+  color: var(--text-muted);
+  flex: none;
+  display: inline-flex;
+}
+.mx-colmenu__label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mx-colmenu__foot {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 4px;
+}
+
+/* ---- My Playlists menu (issue #13) — reuses the .mx-colmenu popover shell
+   but with a fixed search + actions header above a scrollable list. Overriding
+   overflow so only the list scrolls, keeping the search box pinned. ---- */
+.mx-plmenu {
+  width: 300px;
+  overflow: visible;
+  gap: 6px;
+}
+/* #79: full-width "Show Playlists Containing These Tracks" action, the first
+   row of the menu (above the search box). */
+.mx-plmenu__containing {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+.mx-plmenu__search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-input);
+  color: var(--text-muted);
+}
+.mx-plmenu__search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: calc(12px * var(--type-scale));
+  outline: none;
+}
+.mx-plmenu__clear {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+}
+.mx-plmenu__clear:hover {
+  color: var(--text-primary);
+}
+.mx-plmenu__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mx-plmenu__count {
+  margin-left: auto;
+  font-size: calc(11px * var(--type-scale));
+  color: var(--text-muted);
+}
+.mx-plmenu__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+.mx-plmenu__row {
+  cursor: default;
+}
+.mx-plmenu__empty {
+  padding: 8px 6px;
+  font-size: calc(12px * var(--type-scale));
+  color: var(--text-muted);
+}

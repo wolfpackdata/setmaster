@@ -1,0 +1,19 @@
+# --- Python ---
+backend/.venv/
+backend/*.egg-info/
+__pycache__/
+*.pyc
+.pytest_cache/
+backend/tests/golden-cache/
+
+# --- Node / Vite ---
+frontend/node_modules/
+frontend/dist/
+
+# --- release payloads: built artifacts and the downloaded runtime cache ---
+release/dist/
+release/.cache/
+
+# --- OS noise ---
+.DS_Store
+Thumbs.db

@@ -1,0 +1,111 @@
+/* SetMaster 3 — base styles (dark only, §1.2). */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--type-body-size);
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numeric cells align without gridlines (§3.2). */
+.tabular,
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+a {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+::placeholder {
+  color: var(--text-muted);
+}
+
+/* NI label style (§3.2 --type-label): uppercase 11px, letterspaced. */
+.ni-label {
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  letter-spacing: var(--type-label-tracking);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.screen {
+  padding: var(--space-6);
+  overflow-y: auto;
+  height: 100%;
+}
+
+.screen-title {
+  font-size: var(--type-display-size);
+  font-weight: var(--type-display-weight);
+  margin-bottom: var(--space-4);
+}
+
+.section-heading {
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+  margin-bottom: var(--space-3);
+}
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  padding: var(--space-4);
+}
+
+.small {
+  font-size: var(--type-small-size);
+  color: var(--text-secondary);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+/* Focus visibility (§9): inset blue ring, no layout shift. */
+:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: -2px;
+}
+
+/* Scrollbars in keeping with the dark chrome. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #333 transparent;
+}

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="24 4 152 131">
+  <!-- RML sunset mark — vector recreation (2026-07-06) of the RML-provided logo bitmaps.
+       Gradient semicircle (sun) over an inverted-triangle reflection.
+       If RML supplies an original vector, it supersedes this file. -->
+  <defs>
+    <linearGradient id="rml-sun" x1="0" y1="8" x2="0" y2="80" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E2836D"/>
+      <stop offset="1" stop-color="#F0E5A6"/>
+    </linearGradient>
+    <linearGradient id="rml-tri" x1="0" y1="86" x2="0" y2="131" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#96409F"/>
+      <stop offset="1" stop-color="#2E2670"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#rml-sun)" d="M28 80 A72 72 0 0 1 172 80 Z"/>
+  <path fill="url(#rml-tri)" d="M57 86 H143 L100 131 Z"/>
+</svg>
