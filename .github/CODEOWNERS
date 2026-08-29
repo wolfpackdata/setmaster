@@ -1,0 +1,17 @@
+# CODEOWNERS — the Admin gate for `main`
+#
+# Canonical copy for every Wolfpack repo (copy it in at bootstrap; see
+# docs/sop/runbooks/new-repo-bootstrap.md).
+#
+# The `sop-main` ruleset requires one approving review FROM A CODE OWNER before anything
+# merges into `main`. This file names exactly one owner — the Admin — so no other approval
+# can satisfy that gate. Full rule: docs/sop/09-roles-and-permissions.md.
+#
+# NEVER list the AI Reviewer machine user (e.g. `wolfpack-main`) or the `ai-reviewers` team
+# here. The AI Reviewer reviews; if it were a code owner its automated approval would open
+# `main`, which is precisely what the gate exists to prevent.
+#
+# Add a second human code owner only when one actually joins — that is also what retires the
+# single-human bypass caveat documented in topic 09.
+
+* @wolfpackdata

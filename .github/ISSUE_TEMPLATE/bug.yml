@@ -1,0 +1,83 @@
+name: Bug
+description: Something is broken or behaving incorrectly.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Filing a bug. It will be labeled `bug` automatically. If it **blocks a core
+        workflow or risks data loss**, also add the `critical` label after creating.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: The actual behavior, including any error output.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen instead.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: >-
+        Testable statements that decide when this is fixed. The AI Reviewer checks the PR
+        against them; the Reporter closes the issue against them. Derived criteria are
+        marked "(derived — confirm)".
+      placeholder: |
+        - [ ] Exporting with the filter active includes the last row.
+        - [ ] The footer's row count matches the exported file's row count.
+    validations:
+      required: true
+  - type: textarea
+    id: verification-plan
+    attributes:
+      label: Verification plan
+      description: The commands, data, and expected result that prove each criterion.
+      placeholder: |
+        npm run test -- export.spec.ts   # expect: all green
+        Export the 500-row fixture with the date filter on → the CSV has 500 data rows.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: false
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, versions, data set, or anything else relevant to reproducing.
+    validations:
+      required: false
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: >-
+        What this fix deliberately does not change — it keeps the work from creeping and
+        the reviewer from flagging what was left alone on purpose.
+    validations:
+      required: false
+  - type: input
+    id: affected-area
+    attributes:
+      label: Affected area
+      description: >-
+        One word for the area touched. It becomes the Conventional Commit scope on this
+        issue's commits.
+      placeholder: export
+    validations:
+      required: false

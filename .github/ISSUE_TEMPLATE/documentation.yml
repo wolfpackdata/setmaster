@@ -1,0 +1,64 @@
+name: Documentation
+description: A docs-only or help-text change (no behavior change).
+title: "docs: "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Filing a documentation issue. It will be labeled `documentation` automatically.
+  - type: textarea
+    id: what
+    attributes:
+      label: What needs documenting or correcting
+      description: The doc, page, or help text and what is wrong, missing, or unclear.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: What a reader can now do
+      description: >-
+        The acceptance criteria for docs — what a reader can do once this lands, as
+        testable statements. Derived criteria are marked "(derived — confirm)".
+      placeholder: |
+        - [ ] A reader can find the release steps without opening the skill.
+        - [ ] The tier list appears once, and every other mention links to it.
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: Location
+      description: File path, URL, or section, if known.
+    validations:
+      required: false
+  - type: textarea
+    id: verification-plan
+    attributes:
+      label: Verification plan
+      description: How to check it landed — the page to open and what should be there.
+      placeholder: |
+        Open docs/sop/04-versioning-and-changelog.md → the "Releases" section exists and
+        its link to the release runbook resolves.
+    validations:
+      required: false
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: >-
+        What this change deliberately does not rewrite — it keeps the work from creeping
+        and the reviewer from flagging what was left alone on purpose.
+    validations:
+      required: false
+  - type: input
+    id: affected-area
+    attributes:
+      label: Affected area
+      description: >-
+        One word for the area touched. It becomes the Conventional Commit scope on this
+        issue's commits.
+      placeholder: sop
+    validations:
+      required: false
