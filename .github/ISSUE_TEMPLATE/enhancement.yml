@@ -1,0 +1,72 @@
+name: Enhancement
+description: A new feature or an improvement to existing behavior.
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Proposing an enhancement. It will be labeled `enhancement` automatically. If it
+        also fixes broken behavior, add `bug` as well after creating.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What need or friction is this addressing?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What should be built or changed, and roughly how.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: >-
+        Testable statements that decide when this is done. The AI Reviewer checks the PR
+        against them; the Reporter closes the issue against them. Derived criteria are
+        marked "(derived — confirm)".
+      placeholder: |
+        - [ ] A saved view restores its filters when reopened from the sidebar.
+        - [ ] An unsaved view still opens empty, as it does today.
+    validations:
+      required: true
+  - type: textarea
+    id: verification-plan
+    attributes:
+      label: Verification plan
+      description: The commands, data, and expected result that prove each criterion.
+      placeholder: |
+        npm run test -- views.spec.ts   # expect: all green
+        Save a view with two filters, reload, reopen it → both filters are still applied.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: >-
+        What this change deliberately does not touch — it keeps the work from creeping and
+        the reviewer from flagging what was left alone on purpose.
+    validations:
+      required: false
+  - type: input
+    id: affected-area
+    attributes:
+      label: Affected area
+      description: >-
+        One word for the area touched. It becomes the Conventional Commit scope on this
+        issue's commits.
+      placeholder: views
+    validations:
+      required: false

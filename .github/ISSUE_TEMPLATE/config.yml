@@ -1,0 +1,5 @@
+# Wolfpack GitHub SOP — issue template chooser.
+# Blank issues stay enabled for quick one-offs (gh issue create), but the forms are the
+# happy path so every issue is classified with a label on creation.
+# See docs/sop/03-issues-and-labels.md.
+blank_issues_enabled: true
