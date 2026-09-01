@@ -26,6 +26,4 @@ link doesn't resolve, warn the Requester it's dead, then search the Notion teams
 the *Wolfpack Notion SOP* page (Wolfpack Document Hub) to recover the current URL.
 
 ## What this repo is
-<REQUIRED — supplied by the user, never invented or left as a placeholder.
-One or two lines: what the app is, and anything the SOP should bend for —
-e.g. build/test commands, or a workflow exception.>
+Offline DJ set-preparation and Traktor/Spotify catalog-analysis tool — a local web app that reads your Traktor collection read-only.
