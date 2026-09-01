@@ -17,3 +17,6 @@ release/.cache/
 # --- OS noise ---
 .DS_Store
 Thumbs.db
+
+# Codex review evidence packs (wp-github-sop topic 08) - never committed
+.code-review-runs/

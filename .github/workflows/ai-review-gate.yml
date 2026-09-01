@@ -1,0 +1,50 @@
+# The AI-review merge gate — canonical template.
+#
+# Copy to .github/workflows/ai-review-gate.yml in a repo, then mark the check
+# `needs-ai-review must be clear` required in that repo's `sop-develop` ruleset
+# (docs/sop/09-roles-and-permissions.md). The workflow on its own reports and blocks nothing.
+#
+# `needs-ai-review` means the review stage is PENDING. This check fails while the label is on
+# the pull request and passes when it is not, so the merge button stays disabled until a human
+# or the implementer deliberately takes the label off.
+#
+# It gates on the LABEL, not on the findings: nothing here reads findings.json, which lives in
+# a git-ignored run folder on someone's machine. The severity judgement stays with the roles;
+# this makes the stage impossible to skip silently.
+#
+# Why not a model hook: a hook runs on the developer's machine, binds one model at a time, and
+# is trusted by the very process it is meant to constrain — it can advise an agent and cannot
+# gate a merge button. Put the enforcement where the effect lands. See docs/sop/10-ai-review.md.
+
+name: AI review gate
+
+on:
+  pull_request:
+    # `labeled` / `unlabeled` are the load-bearing pair: without them the check would only
+    # re-evaluate on a push, so removing the label would leave a stale red check and the only
+    # way to open the gate would be an empty commit — a guardrail whose release valve is a lie
+    # about the code.
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+
+# No API calls are made — the labels arrive in the event payload — so the job gets no token.
+permissions: {}
+
+jobs:
+  gate:
+    # This name is what gets marked required in the ruleset. Changing it silently un-requires
+    # the check in every repo already configured against the old name.
+    name: needs-ai-review must be clear
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fail while the AI-review stage is pending
+        if: contains(github.event.pull_request.labels.*.name, 'needs-ai-review')
+        run: |
+          echo "::error title=AI review pending::This PR carries 'needs-ai-review', so the AI-review stage has not been closed out."
+          echo "Remove the label once the review has been posted and every P0/P1 finding is resolved or overridden in writing."
+          echo "See docs/sop/10-ai-review.md in wolfpackdata/wp-github-sop."
+          exit 1
+
+      - name: Stage clear
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'needs-ai-review') }}
+        run: echo "No 'needs-ai-review' label on this PR — gate open."

@@ -17,8 +17,9 @@ low   <!-- or: risk-tiered → AI review required -->
 - [ ]
 
 ## Local verification results
-<!-- Most repos have no CI — this is the merge gate. Paste the commands you actually ran and
-     their results, credentials redacted (or "N/A — docs only"). -->
+<!-- CI runs where the repo has something to run; these local results complement it, they
+     don't replace it. Paste the commands you actually ran and their results, credentials
+     redacted (or "N/A — docs only"). -->
 
 ```
 # e.g. npm test, npm run build, lint — with their output/summary
@@ -39,4 +40,10 @@ Dispositions:
 - [ ] Risk tier stated; AI review done or `not requested — low risk`.
 - [ ] Acceptance criteria copied from the issue and each one ticked with evidence.
 - [ ] Full local suites run and results pasted above (or explicitly N/A).
-- [ ] After merge: add `fixed-on-develop` to every issue this PR addresses.
+
+<!-- `fixed-on-develop` is no longer a checklist item here. A checklist is read BEFORE the merge
+     button, so a post-merge instruction on it could never fire — which is how the 2026-08-31
+     misses happened. It is now applied by .github/workflows/fixed-on-develop.yml from the
+     `Refs #N` lines above, and owned by the merging Maintainer where that workflow is not
+     installed. See docs/sop/03-issues-and-labels.md. -->
+
