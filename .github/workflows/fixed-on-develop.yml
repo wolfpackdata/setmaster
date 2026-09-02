@@ -1,0 +1,171 @@
+# The `fixed-on-develop` labeling workflow — canonical template.
+#
+# Copy to .github/workflows/fixed-on-develop.yml in a repo; scripts/retrofit-repo.sh installs it
+# fleet-wide. The installed copy is BYTE-IDENTICAL to this file — that is what makes the
+# retrofit's only-if-different check meaningful, and what lets `diff` against this template prove
+# a repo is current. Nothing has to be marked required in a ruleset: unlike the AI-review gate,
+# this workflow does work rather than reporting a verdict.
+#
+# WHY IT EXISTS
+# docs/sop/03-issues-and-labels.md carries an invariant: every issue whose fix is merged to
+# `develop` is either labeled `fixed-on-develop` or closed. Until this workflow that invariant
+# held only when an agent happened to run the merge. On 2026-08-31 three PRs merged into
+# `develop` by hand and every issue they addressed was missed, while the agent-merged PRs of the
+# same round were labeled — coverage split exactly along who pressed the button. The `Refs #N`
+# lines were present and correct; the information simply had no consumer. This is the consumer.
+#
+# WHAT IT DELIBERATELY DOES NOT DO
+# It never closes anything. Closing is release-gated and Admin-driven (topic 03, "Closing at
+# release time"), and an automation that closed issues would quietly delete the verification
+# queue this label exists to build.
+#
+# WHERE IT DOES NOT FIRE — and why the manual rule still has an owner
+#   * base `main` — releases are Admin business and out of scope by design (the `branches:`
+#     filter below).
+#   * a Lightweight-profile repo whose integration branch IS `main`: nothing fires there at all.
+#   * a pull request from a fork: GitHub hands the `pull_request` event a read-only token for
+#     fork PRs no matter what the `permissions:` block says, so the label step cannot write.
+#     (`pull_request_target` would have write, and is a well-known footgun; not worth it for a
+#     fleet with no fork traffic.)
+#   * a PR whose body carries no `Refs #N` line at all — nothing to consume.
+# Those gaps are why topic 03 names the merging **Maintainer** as the actor on the manual path
+# instead of leaving the sentence in the passive voice, and why scripts/sop-audit.sh reports the
+# invariant as its own column: a workflow catches PRs that carry a `Refs` line, and the audit
+# catches the ones that do not.
+
+name: fixed-on-develop
+
+on:
+  pull_request:
+    # `closed` fires on both merge and plain close; the job guard below keeps only the merges.
+    # There is no post-merge trigger that is narrower than this, which is precisely why the PR
+    # template's old "After merge: …" checklist item could never fire — a checklist is read
+    # before the merge button, and this event is the only thing that exists after it.
+    types: [closed]
+    # Base-branch filter. `develop` only: the label means "merged to develop, awaiting
+    # verification", and a release merge into `main` must not re-label anything.
+    branches: [develop]
+
+# Least privilege. `issues: write` covers both halves of the job — adding a label to an issue and
+# creating the label itself, since labels live under the Issues API. Nothing is read from the
+# repository contents, and no pull-request write is ever made.
+permissions:
+  issues: write
+
+jobs:
+  label:
+    # Merged, not merely closed. A PR closed without merging fixed nothing.
+    if: github.event.pull_request.merged == true
+    name: Label the issues this PR addressed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Apply fixed-on-develop to every issue this PR refs
+        env:
+          # The body goes through the environment, never through `${{ }}` interpolation into the
+          # script: a PR body is attacker-controlled text, and interpolating it would paste it
+          # into the shell before bash ever sees a quote.
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          LABEL: fixed-on-develop
+          LABEL_COLOR: "0e8a16"
+          LABEL_DESC: "Fix merged to develop; open pending verification against real data."
+        run: |
+          set -euo pipefail
+
+          # ---------------------------------------------------------------------------------
+          # WHAT COUNTS AS A REFERENCE — decided, not inherited
+          #
+          # Matched:   `Refs #N`, case-insensitively, with an optional colon, anywhere in the
+          #            body; repeated (`Refs #38, Refs #39`) and on as many lines as you like;
+          #            and a comma-continued list after one keyword (`Refs #36, #25`), which
+          #            terminates at the first token that is not `, #<digits>`.
+          # NOT matched: a bare `#N` with no `Refs` in front of it — even inside the template's
+          #            "Related issues" section. The SOP's own history is the argument: PR #41's
+          #            Related-issues section names PR #37 three times in prose ("This supersedes
+          #            PR #37", "Recommend closing #37", "merge #37 first") and cites #38/#39 in
+          #            criteria headings. A bare-`#N` parser labels a pull request and two
+          #            already-counted issues; a `Refs`-anchored parser gets it right. The cost
+          #            of the strict rule is that a reference not preceded by `Refs` is silently
+          #            skipped, and the ONLY thing covering that path is topic 03's named
+          #            Maintainer. Not sop-audit.sh: its invariant column runs this same parser,
+          #            so it is blind to exactly the same references, and its `norefs` count
+          #            fires only on a PR carrying no `Refs` line at all.
+          # NOT matched: closing keywords (`Closes` / `Fixes` / `Resolves`). The SOP bans them
+          #            (topic 03) because the Reporter closes issues after verifying — parsing
+          #            them here would legitimise the thing the rule forbids.
+          # NOT matched: a cross-repo reference (`owner/repo#12`) — no `#` follows the keyword,
+          #            so the regex does not fire, and this job only holds a token for its own
+          #            repository anyway.
+          #
+          # This pipeline is reproduced verbatim in scripts/sop-audit.sh so the audit and the
+          # automation agree on what a reference is. Change one, change both.
+          # ---------------------------------------------------------------------------------
+          # The leading `(^|[^[:alnum:]])` is a left word boundary, and it is not decoration:
+          # without it `hrefs #8` and `prefs #8` both match. It cannot pollute the output —
+          # `[^[:alnum:]]` excludes digits, so the only thing the second `grep` can pull out of
+          # the consumed character is nothing at all.
+          REFS="$(printf '%s\n' "$PR_BODY" \
+            | grep -oiE '(^|[^[:alnum:]])refs:?[[:space:]]*#[0-9]+([[:space:]]*,[[:space:]]*#[0-9]+)*' \
+            | grep -oE '#[0-9]+' | tr -d '#' | sort -un || true)"
+
+          if [ -z "$REFS" ]; then
+            echo "::notice title=No issue references::PR #$PR_NUMBER carries no 'Refs #N' line, so there is nothing to label. If it addressed an issue, the merging Maintainer applies the label by hand (docs/sop/03-issues-and-labels.md)."
+            exit 0
+          fi
+
+          echo "Referenced issues: $(echo "$REFS" | tr '\n' ' ')"
+
+          # Create the label if the repo lacks it — same color and description as topic 03's
+          # create-if-missing table, so a repo bootstrapped by this workflow and one bootstrapped
+          # by scripts/bootstrap-labels.sh end up identical. Create-if-absent rather than
+          # `gh label create --force`: `--force` would restyle the repo's label on every single
+          # merge, and this job has no business editing a label it did not create. The `|| true`
+          # covers the race where two merges land at once and both try to create it.
+          #
+          # Every call below is `gh api` — the REST endpoints — rather than `gh label` /
+          # `gh issue`, which go through GraphQL. GraphQL needs broader repository read than the
+          # `permissions:` block above grants, and a least-privilege token that works only
+          # because a convenience command happened to fall back to REST is a trap for whoever
+          # copies this file next.
+          if gh api "repos/$REPO/labels/$LABEL" >/dev/null 2>&1; then
+            echo "Label '$LABEL' already exists."
+          else
+            echo "Label '$LABEL' missing — creating it."
+            gh api -X POST "repos/$REPO/labels" \
+              -f "name=$LABEL" -f "color=$LABEL_COLOR" -f "description=$LABEL_DESC" \
+              >/dev/null || true
+          fi
+
+          # Idempotent by construction: POST .../labels is a set UNION, not a replace, so a
+          # second run over an already-labeled issue is a no-op that returns 200 and leaves every
+          # other label alone. Re-running this workflow on an old merge is therefore always safe.
+          FAILED=""
+          for N in $REFS; do
+            # A `Refs #N` can legitimately point at a pull request. Skip those rather than
+            # labeling them: a PR is not part of the verification queue. The same GET also tells
+            # us the number resolves at all.
+            IS_PR="$(gh api "repos/$REPO/issues/$N" --jq '.pull_request.url // empty' 2>/dev/null || true)"
+            if [ -n "$IS_PR" ]; then
+              echo "  #$N is a pull request — skipped."
+              continue
+            fi
+
+            if gh api -X POST "repos/$REPO/issues/$N/labels" \
+                 -f "labels[]=$LABEL" >/dev/null 2>&1; then
+              echo "  #$N labeled '$LABEL'."
+            else
+              echo "  #$N could NOT be labeled (missing, transferred, or not accessible)."
+              FAILED="${FAILED:+$FAILED }#$N"
+            fi
+          done
+
+          # A failure is surfaced, never swallowed — an unlabeled issue is the exact defect this
+          # workflow exists to prevent, so it must not fail quietly. It is a warning rather than
+          # a non-zero exit because the merge has already happened: there is nothing left to
+          # block, and a red X on a merged PR would train everyone to ignore red Xs.
+          if [ -n "$FAILED" ]; then
+            echo "::warning title=Some issues were not labeled::$FAILED — apply '$LABEL' by hand (docs/sop/03-issues-and-labels.md)."
+          fi
