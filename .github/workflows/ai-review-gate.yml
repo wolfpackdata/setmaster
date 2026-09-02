@@ -1,7 +1,7 @@
 # The AI-review merge gate — canonical template.
 #
 # Copy to .github/workflows/ai-review-gate.yml in a repo, then mark the check
-# `needs-ai-review must be clear` required in that repo's `sop-develop` ruleset
+# `needs-ai-review must be clear` required in that repo's `sop-develop` AND `sop-main` rulesets
 # (docs/sop/09-roles-and-permissions.md). The workflow on its own reports and blocks nothing.
 #
 # `needs-ai-review` means the review stage is PENDING. This check fails while the label is on
