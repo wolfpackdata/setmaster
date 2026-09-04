@@ -1,10 +1,20 @@
-# The `fixed-on-develop` labeling workflow — canonical template.
+# The `fixed-on-develop` labeling workflow — THE PUBLIC-REPO STANDALONE COPY (#105).
 #
-# Copy to .github/workflows/fixed-on-develop.yml in a repo; scripts/retrofit-repo.sh installs it
-# fleet-wide. The installed copy is BYTE-IDENTICAL to this file — that is what makes the
-# retrofit's only-if-different check meaningful, and what lets `diff` against this template prove
-# a repo is current. Nothing has to be marked required in a ruleset: unlike the AI-review gate,
-# this workflow does work rather than reporting a verdict.
+# THIS FILE IS THE EXCEPTION, NOT THE RULE. The 32 private repos carry a caller stub
+# (`assets/workflows/fixed-on-develop.yml`) that calls the one reusable copy of this logic in
+# `wolfpackdata/wp-github-sop`. The three PUBLIC repos — `setmaster`, `wp-website` and
+# `wolfpackdata/.github` — cannot: a public repository cannot resolve a reusable workflow in a
+# private repository, whatever the source's Actions access level (measured 2026-09-03;
+# recommendation J in docs/sop/10-ai-review.md). So they carry a standalone copy, with no `uses:`
+# of any kind.
+#
+# THIS COPY MUST NOT DRIFT FROM THE REUSABLE FILE. Everything from the SHARED BODY marker down is
+# byte-identical to `.github/workflows/fixed-on-develop.yml` in `wp-github-sop`;
+# `scripts/check-workflow-parity.sh` proves it and `scripts/retrofit-repo.sh` refuses to sweep
+# when it does not hold. A change here reaches these three repos only by re-running
+# `scripts/retrofit-repo.sh --local-copies` against them — moving the `workflows-v1` tag does
+# nothing for them. That asymmetry is the cost of the exception, and it is why the exception is
+# three repos.
 #
 # WHY IT EXISTS
 # docs/sop/03-issues-and-labels.md carries an invariant: every issue whose fix is merged to
@@ -20,11 +30,12 @@
 # queue this label exists to build.
 #
 # WHERE IT DOES NOT FIRE — and why the manual rule still has an owner
-#   * base `main` — releases are Admin business and out of scope by design (the `branches:`
-#     filter below).
+#   * base `main` — releases are Admin business and out of scope by design (the caller's
+#     `branches:` filter).
 #   * a Lightweight-profile repo whose integration branch IS `main`: nothing fires there at all.
 #   * a pull request from a fork: GitHub hands the `pull_request` event a read-only token for
-#     fork PRs no matter what the `permissions:` block says, so the label step cannot write.
+#     fork PRs no matter what the `permissions:` block says, and the reusable form does not
+#     improve it — the token is issued against the CALLER's event and passed down as issued.
 #     (`pull_request_target` would have write, and is a well-known footgun; not worth it for a
 #     fleet with no fork traffic.)
 #   * a PR whose body carries no `Refs #N` line at all — nothing to consume.
@@ -32,20 +43,31 @@
 # instead of leaving the sentence in the passive voice, and why scripts/sop-audit.sh reports the
 # invariant as its own column: a workflow catches PRs that carry a `Refs` line, and the audit
 # catches the ones that do not.
+#
+# FAN-OUT PROVENANCE — a sweep that copies this file inherits the review of the pull request named
+# by `--source-pr`, and `scripts/retrofit-repo.sh` accepts that pull request only when its OWN
+# reviewed diff touched this path, so when a change splits the four workflow templates across two
+# pull requests the next fan-out needs one pull request — a header-only edit is enough — whose diff
+# touched every template it will copy (docs/sop/10-ai-review.md, "The evidence the PR must carry").
 
 name: fixed-on-develop
 
 on:
   pull_request:
     # `closed` fires on both merge and plain close; the job guard below keeps only the merges.
-    # There is no post-merge trigger that is narrower than this, which is precisely why the PR
-    # template's old "After merge: …" checklist item could never fire — a checklist is read
-    # before the merge button, and this event is the only thing that exists after it.
     types: [closed]
     # Base-branch filter. `develop` only: the label means "merged to develop, awaiting
     # verification", and a release merge into `main` must not re-label anything.
     branches: [develop]
 
+# ======================== SHARED BODY BEGIN ========================
+# EVERY BYTE BELOW THIS LINE IS IDENTICAL IN TWO FILES:
+#   .github/workflows/fixed-on-develop.yml       - the reusable workflow the stubs call
+#   assets/workflows-local/fixed-on-develop.yml  - the standalone copy the three public repos carry
+# `scripts/check-workflow-parity.sh` proves it, and `scripts/retrofit-repo.sh` refuses to run a
+# sweep when it fails. Edit one and not the other and the fleet splits into two gates that look
+# the same and are not - the precise failure this whole design exists to make impossible.
+# ===================================================================
 # Least privilege. `issues: write` covers both halves of the job — adding a label to an issue and
 # creating the label itself, since labels live under the Issues API. Nothing is read from the
 # repository contents, and no pull-request write is ever made.
