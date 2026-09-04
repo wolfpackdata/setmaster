@@ -1,12 +1,126 @@
-# The AI-review merge gate — canonical template.
+# The AI-review merge gate — THE PUBLIC-REPO STANDALONE COPY (#105).
 #
-# Copy to .github/workflows/ai-review-gate.yml in a repo, then mark the check
-# `needs-ai-review must be clear` required in that repo's `sop-develop` AND `sop-main` rulesets
-# (docs/sop/09-roles-and-permissions.md). The workflow on its own reports and blocks nothing.
+# THIS FILE IS THE EXCEPTION, NOT THE RULE. The 32 private repos carry a short caller stub
+# (`assets/workflows/ai-review-gate.yml`) that calls the one reusable copy of this logic in
+# `wolfpackdata/wp-github-sop`. The three PUBLIC repos — `setmaster`, `wp-website` and
+# `wolfpackdata/.github` — cannot: **a public repository cannot resolve a reusable workflow in a
+# private repository**, whatever the source's Actions access level. Measured 2026-09-03 on
+# `wp-website`, verbatim `Invalid workflow file … workflow was not found`, with a local-source
+# control in the same repo that succeeded — so the cause is caller visibility, not YAML and not
+# the ref. Recommendation J in docs/sop/10-ai-review.md; a forced exception, not a preference.
 #
-# `needs-ai-review` means the review stage is PENDING. This check fails while the label is on
-# the pull request and passes when it is not, so the merge button stays disabled until a human
-# or the implementer deliberately takes the label off.
+# So these three repos keep a STANDALONE copy: the same permissions, the same two jobs, the same
+# published context, and its own trigger list, with no `uses:` of any kind — not even a
+# local-path one, because there is nothing local to call.
+#
+# TWO JOBS, ONE LABEL, AND ONLY ONE OF THEM GATES (#116).
+#   * `publish-gate-status` publishes the required commit status. It is what BLOCKS.
+#   * `request-review` asks `main-wolfpack` for the review when `needs-ai-review` lands. It is
+#     what ASSIGNS, and it can block nothing — a review request is not a check.
+# In this standalone form there is no caller, so the two jobs' own `permissions:` blocks are the
+# whole grant: `statuses: write` + `pull-requests: read` for the gate, `pull-requests: write` for
+# the request, and neither can write what the other writes. There is deliberately no
+# workflow-level `permissions:` block to hand each of them the union. The gate holds no `checks:`
+# grant at all since #122: it publishes a commit status, not a check run.
+#
+# THIS COPY MUST NOT DRIFT FROM THE REUSABLE FILE. Everything from the SHARED BODY marker down is
+# byte-identical to `.github/workflows/ai-review-gate.yml` in `wp-github-sop`;
+# `scripts/check-workflow-parity.sh` proves it and `scripts/retrofit-repo.sh` refuses to sweep
+# when it does not hold. The whole point of the reusable design is one gate, and three public
+# repos silently running a different one would be the exact failure it was built to prevent.
+#
+# ROLLING A CHANGE OUT HERE IS STILL A SWEEP. A gate change reaches the 32 private repos by
+# moving the `workflows-v1` tag; it reaches these three only by re-running
+# `scripts/retrofit-repo.sh --local-copies` against them. That asymmetry is the cost of the
+# exception, it is stated in docs/sop/10-ai-review.md, and it is why the exception is three
+# repos and not thirty-five.
+#
+# `needs-ai-review` means the review stage is PENDING, and that is exactly what this workflow
+# reports: it publishes a COMMIT STATUS with the context `needs-ai-review must be clear` that sits
+# **pending** (`state: pending`) while the label is on the pull request, and flips to
+# `state: success` when the label comes off. A pending required check disables the merge
+# button precisely as well as a failing one — and, unlike a failing one, it is true and it sends
+# no failure notification. The label is applied together with a review request to
+# `main-wolfpack`, and it is removed by `main-wolfpack` itself when it submits an APPROVE
+# verdict — never by the implementer; the Admin's written override in the PR is the only other
+# path (docs/sop/10-ai-review.md). The review request is not a label and cannot gate anything,
+# which is why both are applied.
+#
+# The check must still be marked required per repo, in that repo's `sop-develop` AND `sop-main`
+# rulesets (docs/sop/09-roles-and-permissions.md). Installing a caller reports; the ruleset is
+# what blocks, and the two halves are installed in that order, always.
+#
+# WHY NOT A FAILING JOB — the defect this file was rewritten to fix (#97)
+# Until 2026-09-03 the gate was a job named `needs-ai-review must be clear` whose first step ran
+# `exit 1` while the label was on. The job name WAS the required context, so the only way to
+# report "pending" was to report "failed". Two costs: the run made a false statement about its
+# own outcome, and firing on every `opened` / `synchronize` / `labeled` event across the fleet it
+# produced roughly 201 "PR run failed: AI review gate" email threads in 14 days (measured
+# 2026-09-01), burying the genuine CI failures the same mailbox carries. Filtering the mail would
+# have hidden both. Publishing the state as a status of its own keeps every tooth and drops the
+# lie: the JOB always concludes `success`, and the published CONTEXT carries the gate state.
+# (#97 used a Checks-API check run for that; #122 replaced it with a commit status, for the reason
+# in point 7 below. The job-vs-context split is the part that has never changed.)
+#
+# THE SEVEN THINGS THAT ARE LOAD-BEARING HERE — change none of them casually
+#   1. The context string `needs-ai-review must be clear` is the required context in both
+#      rulesets and is hard-coded in scripts/bootstrap-org-rulesets.sh, scripts/sop-audit.sh
+#      (AI_GATE_CONTEXT) and docs/sop/09-roles-and-permissions.md. Renaming it silently
+#      un-requires the check in every repo already configured against the old name.
+#   2. The job is named something else (`publish-gate-status`) so that the job's own check run
+#      and the published context never compete for one name. Under a stub the job's own context is
+#      composed as `gate / publish-gate-status`, which is one more reason the two must differ.
+#   3. Pending is `state: pending` on the commit status. It is never `failure` or `error` — those
+#      are the false statements and the mail #97 removed — and never `success` while the label is
+#      on, which would open a required gate before the review ran. The check-run era's trap was
+#      the same shape: `conclusion: neutral` counts as PASSING, so it was never used either.
+#   4. The check is keyed to `github.event.pull_request.head.sha`, never `github.sha` — on a
+#      `pull_request` event `github.sha` is the ephemeral merge commit, and a check keyed to it
+#      never satisfies the ruleset, which evaluates the head SHA. Under a stub the `github`
+#      context is the CALLER's event, so this expression resolves exactly as it always did.
+#   5. The trigger list `[opened, reopened, synchronize, labeled, unlabeled]` is the load-bearing
+#      set: without `labeled` / `unlabeled` the check would only re-evaluate on a push, so
+#      removing the label would leave a stale pending check and the only way to open the gate
+#      would be an empty commit — a guardrail whose release valve is a lie about the code. That
+#      list now lives in the CALLERS, which is the one thing the stub design moved out of here.
+#   6. LAST-EVENT SAFETY is two mechanisms, and it takes both (PR99-001). GitHub runs workflow
+#      runs concurrently with no ordering guarantee, and five triggers on one PR means they
+#      overlap routinely — `opened` and `labeled` arrive seconds apart on every review request.
+#      Two runs racing on one check run can land the OLDER event's verdict last, and that failure
+#      is not symmetric: the losing order publishes `success` while `needs-ai-review` is still on
+#      the PR, opening a required gate on a risk-tiered change before the review ran. So (a) the
+#      `concurrency:` group — now on the JOB, so it travels with the logic instead of being
+#      copied into 32 stubs — serializes every run for one PR, and (b) the step reads the PR's
+#      CURRENT labels at mutation time rather than trusting the event payload, which is a
+#      snapshot of a moment that may already have passed. Serializing alone would still let a
+#      queued run write a stale verdict; reading live alone would still leave a read-then-write
+#      window. Together, the last write always agrees with the label the PR actually carries.
+#   7. THE REQUIRED CONTEXT IS A COMMIT STATUS, NOT A CHECK RUN (#122), and that is a
+#      measurement rather than a taste. A check run belongs to a CHECK SUITE and the Checks API
+#      gives the caller no say in which one: GitHub binds an API-created check run to the app's
+#      EXISTING suite for that head SHA. Measured on PR #123 of this repository — workflow run 2
+#      POSTed a brand-new check run and GitHub filed it under run 1's suite, not its own. GitHub
+#      resolves a required context against the newest run OF THE WORKFLOW THAT PRODUCES IT, so
+#      from the second event onward the gate published nothing the ruleset could see: it read
+#      `expected`, and #99, #107, #103, #111 and #112 merged only through the OrganizationAdmin
+#      bypass. Neither PATCHing one run nor POSTing a fresh one per run can fix that — only
+#      Actions' OWN job check runs land in their run's suite, which is why the pre-#97 job-name
+#      gate satisfied the ruleset (#98 is the control). A COMMIT STATUS has no suite: statuses
+#      resolve per (commit, context), newest wins, whichever run wrote it. The step asserts that
+#      the status IT wrote is the newest one, and fails loud otherwise.
+#
+# WHERE IT DOES NOT FIRE — the fork-PR gap, and why it is correct
+# GitHub hands the `pull_request` event a read-only token for a pull request from a fork, no
+# matter what the `permissions:` block says — and **the reusable form does not improve this one
+# bit.** The token is issued against the caller's event and passed down exactly as issued, so a
+# stub inherits the same read-only token. The status therefore cannot be published, the
+# required context is `expected and never reported`, and every merge on that PR is blocked. That
+# is FAIL-CLOSED and correct — a fork PR must not be able to open the gate by construction — but
+# it is a wall, not a workflow: the fix is to push the branch to the repository itself and open
+# the pull request from there. The step below detects the fork case and says so in the run log
+# rather than letting an opaque 403 stand. (`pull_request_target` would carry write permission
+# and is a well-known footgun; not worth it for a fleet with no fork traffic. The same gap and
+# the same reasoning apply to fixed-on-develop.yml.) Documented in docs/sop/10-ai-review.md.
 #
 # It gates on the LABEL, not on the findings: nothing here reads findings.json, which lives in
 # a git-ignored run folder on someone's machine. The severity judgement stays with the roles;
@@ -15,36 +129,441 @@
 # Why not a model hook: a hook runs on the developer's machine, binds one model at a time, and
 # is trusted by the very process it is meant to constrain — it can advise an agent and cannot
 # gate a merge button. Put the enforcement where the effect lands. See docs/sop/10-ai-review.md.
+#
+# FAN-OUT PROVENANCE — a sweep that copies this file inherits the review of the pull request named
+# by `--source-pr`, and `scripts/retrofit-repo.sh` accepts that pull request only when its OWN
+# reviewed diff touched this path, so when a change splits the four workflow templates across two
+# pull requests the next fan-out needs one pull request — a header-only edit is enough — whose diff
+# touched every template it will copy (docs/sop/10-ai-review.md, "The evidence the PR must carry").
 
 name: AI review gate
 
 on:
   pull_request:
-    # `labeled` / `unlabeled` are the load-bearing pair: without them the check would only
-    # re-evaluate on a push, so removing the label would leave a stale red check and the only
-    # way to open the gate would be an empty commit — a guardrail whose release valve is a lie
-    # about the code.
+    # `labeled` / `unlabeled` are the load-bearing pair — see point 5 in the header of
+    # `.github/workflows/ai-review-gate.yml` in wp-github-sop.
     types: [opened, reopened, synchronize, labeled, unlabeled]
 
-# No API calls are made — the labels arrive in the event payload — so the job gets no token.
-permissions: {}
+# ======================== SHARED BODY BEGIN ========================
+# EVERY BYTE BELOW THIS LINE IS IDENTICAL IN TWO FILES:
+#   .github/workflows/ai-review-gate.yml       - the reusable workflow the stubs call
+#   assets/workflows-local/ai-review-gate.yml  - the standalone copy the three public repos carry
+# `scripts/check-workflow-parity.sh` proves it, and `scripts/retrofit-repo.sh` refuses to run a
+# sweep when it fails. Edit one and not the other and the fleet splits into two gates that look
+# the same and are not - the precise failure this whole design exists to make impossible.
+# ===================================================================
+# LEAST PRIVILEGE IS PER JOB HERE, AND THERE IS NO WORKFLOW-LEVEL BLOCK (#116).
+# This file holds TWO jobs that need two different tokens, and a workflow-level `permissions:`
+# would hand each of them the union of both. `publish-gate-status` reads labels and writes a commit
+# status and must never be able to write a review request; `request-review` writes a review
+# request and must never be able to write a status — the gate's own verdict is the one thing
+# a request must not be able to touch. So each job carries its own block and neither can reach
+# the other's scope.
+#
+# A CALLER CAN ONLY NARROW, NEVER WIDEN. In the called (stub) form the token is issued against
+# the CALLER's `permissions:` block and handed down; a job block here restricts it further and
+# can never escalate it. So a caller must grant the UNION — `statuses: write` AND
+# `pull-requests: write` — and both callers in this repository do
+# (`.github/workflows/ai-review-gate-source.yml` and the fleet template
+# `assets/workflows/ai-review-gate.yml`). A caller that grants less does not fail silently:
+# `request-review` reports the 403 and names the exact line to add.
+#
+# In the STANDALONE form (`assets/workflows-local/`, the three public repos) there is no caller
+# at all, so these two job blocks ARE the whole grant — which is stricter than the single
+# workflow-level block this replaced, not looser.
 
 jobs:
-  gate:
-    # This name is what gets marked required in the ruleset. Changing it silently un-requires
-    # the check in every repo already configured against the old name.
-    name: needs-ai-review must be clear
+  publish-gate-status:
+    # UNCONDITIONAL, deliberately. There is no `if:` on this job, because a job GitHub reports as
+    # `skipped` is a job that never publishes anything — and the whole point is that the required
+    # context exists, and carries the right state, on every one of the five trigger events. The
+    # label branch lives INSIDE the step below.
+    #
+    # This name is NOT the required context — `needs-ai-review must be clear` is, and it is
+    # published as a COMMIT STATUS. Renaming this job is safe; renaming the context is not.
+    name: publish-gate-status
+
+    # Least privilege, per job (see the note above `jobs:`). `statuses: write` publishes the
+    # commit status that IS the required context, and reads it back; `pull-requests: read` is what
+    # lets this job ask the PR for its CURRENT labels instead of trusting the event payload — see
+    # LAST-EVENT SAFETY below. `read`, never `write`: this job reads labels and writes a status,
+    # nothing more (D-246), and in particular it cannot request a review — that is
+    # `request-review`'s scope alone. It holds no `checks:` grant at all since #122: it publishes
+    # no check run, and a scope it cannot use is a scope it cannot misuse.
+    permissions:
+      statuses: write
+      pull-requests: read
+
+    # LAST-EVENT SAFETY, half one of two. AT JOB LEVEL, deliberately (#105).
+    # This block sat at workflow level until both workflows became reusable. It has to travel WITH
+    # the job: a caller-level `concurrency:` would have to be repeated, identically, in all 32 stubs
+    # and in the three public repos' local copies, and the first one that drifted would silently
+    # un-serialize that repo's gate. One job, one group, one place to change it.
+    # GitHub runs workflow runs concurrently and guarantees no ordering between them. Five triggers
+    # on one PR means runs routinely overlap — `opened` and `labeled` arrive seconds apart on every
+    # review request — and two runs racing on one context can land the OLDER event's verdict last.
+    # That failure is not symmetric: the losing order publishes `success` while `needs-ai-review` is
+    # still on the PR, which opens a required gate on a risk-tiered change before the review stage has
+    # run (PR99-001). This group serializes every run for one PR so no two ever interleave.
+    # `cancel-in-progress: false` is deliberate — cancelling a run mid-write is exactly the torn state
+    # being designed out; GitHub already collapses the queue to the newest pending run, which is the
+    # one whose view of the labels is freshest.
+    concurrency:
+      group: ai-review-gate-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Fail while the AI-review stage is pending
-        if: contains(github.event.pull_request.labels.*.name, 'needs-ai-review')
+      - name: Publish the gate status against the PR head SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          # The event payload's own view of the labels — kept only to be logged beside the live
+          # read below, so a disagreement between them is visible in the run log.
+          LABEL_IN_PAYLOAD: ${{ contains(github.event.pull_request.labels.*.name, 'needs-ai-review') }}
         run: |
-          echo "::error title=AI review pending::This PR carries 'needs-ai-review', so the AI-review stage has not been closed out."
-          echo "Remove the label once the review has been posted and every P0/P1 finding is resolved or overridden in writing."
-          echo "See docs/sop/10-ai-review.md in wolfpackdata/wp-github-sop."
-          exit 1
+          set -euo pipefail
 
-      - name: Stage clear
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'needs-ai-review') }}
-        run: echo "No 'needs-ai-review' label on this PR — gate open."
+          # The required context. Load-bearing — see point 1 in the header.
+          CONTEXT='needs-ai-review must be clear'
+          # Where the status points. The run that wrote it is the only useful place to look when
+          # the gate says something surprising, and a commit status carries no summary of its own.
+          TARGET_URL="$GITHUB_SERVER_URL/$REPO/actions/runs/$GITHUB_RUN_ID"
+
+          if [ "$HEAD_REPO" != "$REPO" ]; then
+            echo "::error title=Fork pull request - the gate cannot publish::This pull request comes from $HEAD_REPO, so GitHub issued a read-only token and the status '$CONTEXT' cannot be published. The required context stays expected-and-never-reported and the merge is blocked - fail-closed and correct. Push the branch to $REPO and open the pull request from there. See docs/sop/10-ai-review.md."
+            exit 1
+          fi
+
+          # LAST-EVENT SAFETY, half two of two.
+          # The event payload is a SNAPSHOT of the labels when the event fired, and this run may
+          # start well after that. Serializing the runs (the `concurrency:` block above) stops two
+          # of them interleaving; reading the labels HERE, at mutation time, is what stops a run
+          # that queued behind a newer event from writing a stale verdict. The two together make
+          # the last write always agree with the label the PR actually carries.
+          LABEL_PRESENT="$(gh api "repos/$REPO/issues/$PR_NUMBER/labels" \
+            --jq 'if any(.[]; .name == "needs-ai-review") then "true" else "false" end')"
+
+          if [ "$LABEL_PRESENT" != "$LABEL_IN_PAYLOAD" ]; then
+            echo "::notice title=Label state moved on::The $GITHUB_EVENT_NAME payload said needs-ai-review=$LABEL_IN_PAYLOAD; the pull request currently says $LABEL_PRESENT. Publishing the current state, which is the point of reading it live."
+          fi
+
+          if [ "$LABEL_PRESENT" = 'true' ]; then
+            # PENDING: `state: pending`. Never `failure` or `error` — see point 3.
+            WANT_STATE='pending'
+            DESCRIPTION='AI review pending - main-wolfpack removes the label on APPROVE'
+          else
+            WANT_STATE='success'
+            DESCRIPTION='No needs-ai-review label - the AI review stage is clear'
+          fi
+
+          # WHY A COMMIT STATUS AND NOT A CHECK RUN (#122) — the measurement, not a preference.
+          # From #97 to #122 this job published the required context as a Checks-API CHECK RUN, and
+          # every labelled pull request merged only through the OrganizationAdmin bypass. The cause
+          # is that a check run belongs to a CHECK SUITE and the API gives the caller no say in
+          # which one: GitHub binds an API-created check run to the app's EXISTING suite for that
+          # head SHA. Measured on this repository, PR #123: workflow run 2 POSTed a brand-new check
+          # run (100890770924) and GitHub filed it under run 1's suite 91684326730, not run 2's own
+          # suite 91684468291. A PATCH does the same thing for the same reason. So every run after
+          # the first left its own suite carrying no run of the required name, and GitHub — which
+          # resolves a required context against the newest run of the workflow that produces it —
+          # read `Required status check "needs-ai-review must be clear" is expected` and blocked.
+          # Only Actions' OWN job check runs land in their run's suite, which is why the pre-#97
+          # job-name gate satisfied the ruleset (#98 is the control) and why POSTing per run does
+          # not: neither "PATCH once" nor "POST every time" can put a check run where the ruleset
+          # looks.
+          #
+          # A COMMIT STATUS HAS NO SUITE AT ALL. Statuses are resolved per (commit, context): the
+          # NEWEST status for a context is the one that counts, whichever workflow run wrote it.
+          # That is exactly the semantics this gate needs, and it is the same mechanism every
+          # pre-Checks-API CI system used. It keeps every property #97 was written for: `pending`
+          # blocks the merge exactly as a failure would, it is TRUE, and it sends no failure mail.
+          # What it gives up is the rich output panel a check run can carry — hence `target_url`
+          # above, and the job summary below.
+          CREATED="$(gh api -X POST "repos/$REPO/statuses/$HEAD_SHA" \
+            -f "state=$WANT_STATE" \
+            -f "context=$CONTEXT" \
+            -f "description=$DESCRIPTION" \
+            -f "target_url=$TARGET_URL")"
+          STATUS_ID="$(printf '%s' "$CREATED" | jq -r '.id // empty')"
+          if [ -z "$STATUS_ID" ]; then
+            echo "::error title=The gate status was not created::POST repos/$REPO/statuses/$HEAD_SHA returned no id, so the required context '$CONTEXT' is unreported for this workflow run and the merge is blocked - fail-closed and correct. See docs/sop/10-ai-review.md."
+            exit 1
+          fi
+
+          # Read the state back rather than trusting the write, and read it the way the RULESET
+          # reads it: the newest status for this context on this SHA. Asserting that the newest one
+          # is the one this run just wrote is what proves the gate's verdict is the one that counts
+          # — the assertion the check-run design could not make, and whose absence let five merges
+          # through on an admin bypass. `/commits/<sha>/statuses` is newest-first.
+          NEWEST="$(gh api "repos/$REPO/commits/$HEAD_SHA/statuses?per_page=100" \
+            --jq "[.[] | select(.context == \"$CONTEXT\")] | first // empty")"
+          NEWEST_ID="$(printf '%s' "$NEWEST" | jq -r '.id // empty')"
+          NEWEST_STATE="$(printf '%s' "$NEWEST" | jq -r '.state // empty')"
+          COMBINED="$(gh api "repos/$REPO/commits/$HEAD_SHA/status" --jq '.state // empty')"
+
+          {
+            echo "### \`$CONTEXT\`"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| head SHA | \`$HEAD_SHA\` |"
+            echo "| \`needs-ai-review\` (live) | \`$LABEL_PRESENT\` |"
+            echo "| \`needs-ai-review\` (event payload) | \`$LABEL_IN_PAYLOAD\` |"
+            echo "| status written | \`${STATUS_ID:-<none>}\` -> \`$WANT_STATE\` |"
+            echo "| newest status for this context | \`${NEWEST_ID:-<none>}\` -> \`${NEWEST_STATE:-<none>}\` |"
+            echo "| combined state for the commit | \`${COMBINED:-<none>}\` |"
+            echo
+            if [ "$WANT_STATE" = 'pending' ]; then
+              echo "This pull request carries \`needs-ai-review\`, so the AI-review stage is still open."
+              echo "The context stays **pending** rather than failing: a pending required check blocks the"
+              echo "merge exactly as a failing one does, and it makes no false statement about the run."
+              echo "\`main-wolfpack\` removes the label when it submits an APPROVE verdict; a written Admin"
+              echo "override in the pull request is the only other path. See docs/sop/10-ai-review.md in"
+              echo "wolfpackdata/wp-github-sop."
+            else
+              echo "No \`needs-ai-review\` label on this pull request - the gate is open."
+              echo "See docs/sop/10-ai-review.md in wolfpackdata/wp-github-sop."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "wrote status $STATUS_ID -> $WANT_STATE; newest for '$CONTEXT' is ${NEWEST_ID:-<none>} -> ${NEWEST_STATE:-<none>}"
+
+          # THE ASSERTION NOBODY HAD (#122). If the status this run wrote is not the newest one for
+          # the context, the ruleset is reading somebody else's verdict and this gate is not the
+          # gate. Fail loud rather than leave a green-looking pull request behind a stale answer.
+          if [ "$NEWEST_ID" != "$STATUS_ID" ]; then
+            echo "::error title=The gate status this run wrote is not the newest one::This run wrote status $STATUS_ID, but the newest status for '$CONTEXT' on $HEAD_SHA is ${NEWEST_ID:-<none>} (state ${NEWEST_STATE:-<none>}). The ruleset resolves a required context to the NEWEST status, so this run's verdict is not the one being enforced. Another run wrote after this one, or the write did not land. Do not merge. See docs/sop/10-ai-review.md."
+            exit 1
+          fi
+
+          if [ "$NEWEST_STATE" != "$WANT_STATE" ]; then
+            echo "::error title=Gate status is not in the intended state::Wanted state=$WANT_STATE; read back state=${NEWEST_STATE:-<none>}. The gate cannot be trusted in this state - do not merge. See docs/sop/10-ai-review.md."
+            exit 1
+          fi
+
+  request-review:
+    # THE LABEL IS THE REQUEST (#116).
+    #
+    # Ry's ruling of 2026-09-02 made a review request to `main-wolfpack` part of asking for the AI
+    # review rather than a second thing to remember. Until now that was two flags on one command —
+    # `gh pr edit <N> --add-label needs-ai-review --add-reviewer main-wolfpack` — where one flag
+    # GATES (the label is what the check run above reads) and the other ASSIGNS (the request is
+    # what puts the PR in the reviewer's queue). Forgetting the second failed silently: the gate
+    # still blocked, the PR still looked correctly labelled, and the review simply never got
+    # picked up. Nothing anywhere reported it. This job removes the second flag from the critical
+    # path — the label alone now does both — and the manual flag stays as the documented fallback
+    # for a repo without the workflow, a fork PR, or a broken run (docs/sop/10-ai-review.md).
+    #
+    # WHY THIS JOB CARRIES AN `if:` WHEN `publish-gate-status` MUST NOT.
+    # `publish-gate-status` is unconditional because a job GitHub reports as `skipped` publishes no
+    # check run, and the gate's entire contract is that the required context reports on every one
+    # of the five trigger events (#99). This job is the opposite case: a review request is not a
+    # check, is required by no ruleset, and cannot block a merge — so a skipped `request-review` is
+    # an honest no-op that nothing is waiting on. The `if:` is what keeps `synchronize` and
+    # `unlabeled` from reaching the step at all, which is cheaper and clearer than a step that
+    # starts a runner in order to decide it has nothing to do.
+    #
+    # THE EVENTS IT ANSWERS — AND THE TWO IT DELIBERATELY DOES NOT
+    #   * `labeled` with `needs-ai-review` — the request being made. The event that matters.
+    #   * `opened` / `reopened` ALREADY CARRYING the label. This half is not redundant: a PR
+    #     created with the label in one breath (`gh pr create --label needs-ai-review`) fires NO
+    #     `labeled` event, so without it the commonest shape in this SOP would never request
+    #     anyone — the exact silent failure the job exists to remove, reintroduced.
+    #   * `unlabeled` — NOTHING, on purpose (task 9's ruling). The label is the gate; the request
+    #     is an assignment, and the two are not the same fact. A submitted review clears the
+    #     request by itself, a still-pending one is a truthful state, and withdrawing a request
+    #     mid-review would delete the reviewer's own queue entry for work already underway.
+    #   * `synchronize` — NOTHING. A push while the label is on is the implementer answering
+    #     findings; the scoped re-review (docs/sop/10-ai-review.md §5a) is re-requested BY HAND
+    #     when the fixes are actually ready. Re-requesting on every push would notify `main@` once
+    #     per commit, which is how an automated request stops being read.
+    # Written on lines of EQUAL indentation on purpose: under a folded `>-` scalar a line indented
+    # MORE than the first is kept literally, newline and all, and a stray newline inside a GitHub
+    # expression is a parse risk for no benefit. Flat lines fold to one clean line.
+    if: >-
+      (github.event.action == 'labeled' && github.event.label.name == 'needs-ai-review')
+      || ((github.event.action == 'opened' || github.event.action == 'reopened')
+      && contains(github.event.pull_request.labels.*.name, 'needs-ai-review'))
+
+    # LEAST PRIVILEGE, PER JOB. This job writes a review request and reads labels and reviews.
+    # It never touches the gate's context, so it is not granted `statuses: write` — the one thing
+    # the gate job above may write, this job cannot, and vice versa. See the permissions note above the
+    # jobs block for why there is no workflow-level grant to widen either of them.
+    permissions:
+      pull-requests: write
+
+    # IDEMPOTENCY, HALF ONE OF TWO. Its OWN group, never the gate's.
+    # Two `labeled` events seconds apart — a label removed and re-added, or a retry — would
+    # otherwise run this step twice concurrently, both read "not requested", and both POST. The
+    # second POST is harmless to the API and NOT harmless to the reviewer: GitHub sends a
+    # notification for each. Serializing them lets the second run see the first run's write.
+    # It must NOT share `publish-gate-status`'s group: two jobs of one workflow run in one
+    # concurrency group queue against each other, which would serialize the gate behind a request
+    # it does not depend on and could leave the required check unpublished while this job waits.
+    concurrency:
+      group: ai-review-request-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Request the AI review from main-wolfpack
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          # Through env, never interpolated into the script body: the whole file keeps every
+          # `${{ }}` out of the shell text so no event field can ever be read as shell.
+          EVENT_ACTION: ${{ github.event.action }}
+        run: |
+          set -euo pipefail
+
+          # The one account a review is ever requested from. It is the AI Reviewer's GitHub
+          # identity (docs/sop/09-roles-and-permissions.md) and nothing else is ever substituted
+          # here: a request to a human is a human's review, which this SOP asks for by hand.
+          REVIEWER='main-wolfpack'
+          GATE_LABEL='needs-ai-review'
+          # The byte-identical fan-out marker (docs/sop/10-ai-review.md). A sweep of 35 PRs
+          # carrying one reviewed diff must put ZERO requests in one queue.
+          FANOUT_LABEL='sop-fanout'
+
+          # ---- skip 1: a fork PR. The token is read-only and the POST cannot succeed. ---------
+          # A NOTICE, not an error, and this is the one place this file reports a fork quietly.
+          # `publish-gate-status` already fails loudly on exactly this condition, on the same
+          # event, in the same run — the merge is blocked and the reason is on screen. A second
+          # error here would double the failure mail for one fact without adding one.
+          if [ "$HEAD_REPO" != "$REPO" ]; then
+            echo "::notice title=Fork pull request - no review request::This pull request comes from $HEAD_REPO, so GitHub issued a read-only token and no review can be requested from it. The gate job reports the same limitation as the blocking error. Push the branch to $REPO and open the pull request from there, or request the review by hand: gh pr edit $PR_NUMBER -R $REPO --add-reviewer $REVIEWER. See docs/sop/10-ai-review.md."
+            exit 0
+          fi
+
+          # ---- skip 2: the reviewer is the author. GitHub 422s, and it would be right to. -----
+          # Unreachable today - `main-wolfpack` has triage and cannot push a branch - but it is
+          # checked rather than assumed, because the failure mode of assuming is a hard 422 whose
+          # message names nothing useful.
+          if [ "$PR_AUTHOR" = "$REVIEWER" ]; then
+            echo "::notice title=Author is the reviewer - no review request::$REVIEWER opened this pull request, and GitHub does not let an author be asked to review it. Nothing to do."
+            exit 0
+          fi
+
+          # ---- the labels, read LIVE ----------------------------------------------------------
+          # Same reasoning as the gate job's LAST-EVENT SAFETY: the event payload is a snapshot of
+          # a moment that may already have passed, and this run may start well after it. A label
+          # added and removed inside a few seconds must not produce a request for a stage nobody
+          # is waiting on any more.
+          LABELS="$(gh api "repos/$REPO/issues/$PR_NUMBER/labels" --jq '[.[].name]')"
+          has_label() { printf '%s' "$LABELS" | jq -e --arg n "$1" 'any(.[]; . == $n)' > /dev/null; }
+
+          # ---- skip 3: the fan-out carve-out --------------------------------------------------
+          # A PR whose changed bytes are identical to an already-reviewed template set INHERITS
+          # that review and carries neither the gate label nor a request. If both labels are
+          # somehow on one PR the fan-out marker wins and the run says so: the alternative is 35
+          # notifications for one diff, which is the failure this marker was invented for.
+          if has_label "$FANOUT_LABEL"; then
+            echo "::notice title=Fan-out pull request - no review request::This pull request carries '$FANOUT_LABEL', so it inherits its source PR's review and no request is made (docs/sop/10-ai-review.md, the byte-identical fan-out carve-out). Labels now: $LABELS"
+            exit 0
+          fi
+
+          # ---- skip 4: the label is already gone -----------------------------------------------
+          if ! has_label "$GATE_LABEL"; then
+            echo "::notice title=Label already removed - no review request::'$GATE_LABEL' is no longer on this pull request; the $GITHUB_EVENT_NAME event that started this run is stale. Labels now: $LABELS"
+            exit 0
+          fi
+
+          # ---- IDEMPOTENCY, HALF TWO OF TWO: request at most ONCE PER HEAD SHA -----------------
+          # Two different conditions, and it takes both, because they cover different halves of
+          # the PR's life and GitHub itself moves the state between them.
+          #
+          #   (a) ALREADY PENDING. `requested_reviewers` still lists the reviewer, so the request
+          #       stands and re-POSTing would only re-notify. This covers a label removed and
+          #       re-added while the review is still outstanding.
+          #
+          #   (b) ALREADY REVIEWED THESE BYTES. GitHub REMOVES a user from `requested_reviewers`
+          #       the moment they submit a review, so (a) goes false for every PR the reviewer has
+          #       answered. Without (b), re-adding the label after an APPROVE - which is exactly
+          #       what a second stage on the same head looks like - would request a review of
+          #       bytes already reviewed. Keying on `commit_id == HEAD_SHA` is what makes the rule
+          #       "once per head SHA" rather than "once ever": a PUSH is new bytes, so the next
+          #       label lands a genuine new request, which is the scoped-re-review flow working as
+          #       written.
+          #
+          # Together: exactly one request per (pull request, head SHA). Note the POST itself is
+          # idempotent in the API's own terms - it never creates a duplicate row - so this guard
+          # exists for the NOTIFICATION, which is the thing that actually gets ignored when it
+          # repeats.
+          PENDING="$(gh api "repos/$REPO/pulls/$PR_NUMBER/requested_reviewers" \
+            --jq "if any(.users[]?.login; . == \"$REVIEWER\") then \"true\" else \"false\" end")"
+
+          REVIEWED="$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/reviews" \
+            --jq ".[] | select(.user.login == \"$REVIEWER\") | select(.commit_id == \"$HEAD_SHA\") | .id" \
+            | wc -l | tr -d '[:space:]')"
+
+          SKIP_REASON=''
+          if [ "$PENDING" = 'true' ]; then
+            SKIP_REASON="a request to $REVIEWER is already pending on this pull request"
+          elif [ "$REVIEWED" != '0' ]; then
+            SKIP_REASON="$REVIEWER has already submitted $REVIEWED review(s) of this exact head SHA ($HEAD_SHA); GitHub clears the pending request on submission, so an empty requested_reviewers here means reviewed, not unasked"
+          fi
+
+          if [ -n "$SKIP_REASON" ]; then
+            ACTION="no request - $SKIP_REASON"
+            FINAL="$PENDING"
+            echo "::notice title=Review request already in place::$SKIP_REASON. Not re-requesting: the API would accept it and the reviewer would be notified again."
+          else
+            # ---- the write ---------------------------------------------------------------------
+            set +e
+            RESP="$(gh api -X POST "repos/$REPO/pulls/$PR_NUMBER/requested_reviewers" \
+              -f "reviewers[]=$REVIEWER" 2>&1)"
+            ST=$?
+            set -e
+
+            if [ $ST -ne 0 ]; then
+              # FAIL LOUD. A swallowed failure here is indistinguishable from a working automation
+              # that nobody is watching, which is the state this job was built to end.
+              echo "$RESP"
+              case "$RESP" in
+                *403*|*'Resource not accessible'*)
+                  echo "::error title=Cannot request the review - the token lacks pull-requests write::The POST to repos/$REPO/pulls/$PR_NUMBER/requested_reviewers was refused. This workflow is CALLED, and a called workflow's token can only be narrowed by the callee, never widened - so the grant has to come from the CALLER. Fix the caller (.github/workflows/ai-review-gate.yml in $REPO) to declare 'permissions: pull-requests: write' alongside 'statuses: write', exactly as assets/workflows/ai-review-gate.yml in wolfpackdata/wp-github-sop does. Until then, request by hand: gh pr edit $PR_NUMBER -R $REPO --add-reviewer $REVIEWER."
+                  ;;
+                *)
+                  echo "::error title=Cannot request the review from $REVIEWER (HTTP 422 or worse)::GitHub refused to add $REVIEWER as a reviewer on $REPO#$PR_NUMBER. The usual cause is ACCESS: $REVIEWER can only be requested on a repository it can already read, which it gets from the org team 'ai-reviewers' (triage permission - docs/sop/09-roles-and-permissions.md). Add $REPO to that team's repositories, or check that $REVIEWER is still an org member, then re-apply the '$GATE_LABEL' label to retry. Manual fallback: gh pr edit $PR_NUMBER -R $REPO --add-reviewer $REVIEWER."
+                  ;;
+              esac
+              exit 1
+            fi
+
+            # Read the state back rather than trusting the write - the same rule the gate job
+            # holds itself to. A 2xx that did not land is the one failure a POST cannot report.
+            FINAL="$(gh api "repos/$REPO/pulls/$PR_NUMBER/requested_reviewers" \
+              --jq "if any(.users[]?.login; . == \"$REVIEWER\") then \"true\" else \"false\" end")"
+            ACTION="requested a review from $REVIEWER"
+
+            if [ "$FINAL" != 'true' ]; then
+              echo "::error title=Review request did not land::The POST succeeded but $REVIEWER is not in requested_reviewers on $REPO#$PR_NUMBER. Request it by hand: gh pr edit $PR_NUMBER -R $REPO --add-reviewer $REVIEWER."
+              exit 1
+            fi
+          fi
+
+          {
+            echo "### AI review request"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| event | \`$GITHUB_EVENT_NAME\` / \`${{ github.event.action }}\` |"
+            echo "| head SHA | \`$HEAD_SHA\` |"
+            echo "| labels (live) | \`$LABELS\` |"
+            echo "| already pending | \`$PENDING\` |"
+            echo "| reviews of this head by \`$REVIEWER\` | \`$REVIEWED\` |"
+            echo "| action | $ACTION |"
+            echo "| \`$REVIEWER\` requested now | \`$FINAL\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "$ACTION"
